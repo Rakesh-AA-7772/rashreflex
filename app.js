@@ -1,5 +1,6 @@
 import { firebaseConfig } from './firebase-config.js';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+import { getAnalytics } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js';
 import {
   getAuth,
   setPersistence,
@@ -10,7 +11,7 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged
-} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js';
 import {
   getFirestore,
   doc,
@@ -22,11 +23,12 @@ import {
   limit,
   onSnapshot,
   serverTimestamp
-} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const analytics = getAnalytics(app);
 const googleProvider = new GoogleAuthProvider();
 
 await setPersistence(auth, browserLocalPersistence);

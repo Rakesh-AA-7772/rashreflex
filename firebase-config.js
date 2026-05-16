@@ -1,8 +1,9 @@
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAJqoNcRywzrGCQaLf84orLmxH4dAIJzbM",
+  authDomain: "rashreflex.firebaseapp.com",
+  projectId: "rashreflex",
+  storageBucket: "rashreflex.firebasestorage.app",
+  messagingSenderId: "565845797253",
+  appId: "1:565845797253:web:fe872347fa4b62f509fcec",
+  measurementId: "G-S6G8J4B2KZ"
 };
