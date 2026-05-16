@@ -1,5 +1,5 @@
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAJqoNcRywzrGCQaLf84orLmxH4dAIJzbM",
   authDomain: "rashreflex.vercel.app/",
   projectId: "rashreflex",
