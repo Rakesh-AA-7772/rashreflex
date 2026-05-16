@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rash Reflex</title>
+  <meta name="description" content="Rash Reflex is a clean reaction-time game built with Firebase login, nicknames, and a global leaderboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero-card" id="authView">
+      <div class="brand-row">
+        <div class="brand-mark">RR</div>
+        <div>
+          <p class="eyebrow">Reaction test</p>
+          <h1>Rash Reflex</h1>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <h2>Login</h2>
+        <p>Sign in, set your nickname once, and test your reflex against the clock.</p>
+      </div>
+
+      <div class="auth-tabs" aria-label="authentication methods">
+        <button class="tab-btn active" data-auth-tab="email">Email / Password</button>
+        <button class="tab-btn" data-auth-tab="google">Google</button>
+      </div>
+
+      <form id="emailAuthForm" class="auth-form" autocomplete="on">
+        <label>
+          <span>Email</span>
+          <input id="authEmail" type="email" placeholder="you@example.com" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="authPassword" type="password" placeholder="••••••••" minlength="6" required />
+        </label>
+        <div class="auth-actions">
+          <button type="submit" class="primary-btn">Login / Sign up</button>
+          <button type="button" id="logoutFromAuth" class="ghost-btn hidden">Logout</button>
+        </div>
+      </form>
+
+      <div id="googleAuthPanel" class="auth-panel hidden">
+        <p class="panel-note">Use your Google account to enter quickly.</p>
+        <button type="button" id="googleSignInBtn" class="primary-btn full-width">Continue with Google</button>
+      </div>
+
+      <p id="authStatus" class="status-line">Not signed in.</p>
+    </section>
+
+    <section class="hero-card hidden" id="nicknameView">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Profile setup</p>
+          <h2>Choose your nickname</h2>
+        </div>
+      </div>
+      <p class="helper-text">This nickname will stay linked to your account and will be used on the leaderboard.</p>
+      <form id="nicknameForm" class="auth-form">
+        <label>
+          <span>Nickname</span>
+          <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
+        </label>
+        <button type="submit" class="primary-btn">Enter and save</button>
+      </form>
+      <p class="subtle-text">One nickname per account. You can change it later from the profile area.</p>
+    </section>
+
+    <section class="game-layout hidden" id="gameView">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Ready to test</p>
+          <h2 id="welcomeLine">Welcome back</h2>
+        </div>
+        <div class="profile-pill" id="profilePill">—</div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-stage idle" id="gameStage">
+          <div class="stage-copy" id="stageCopy">
+            <h3>Click to get started</h3>
+            <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
+          </div>
+          <button id="gameButton" class="stage-button">Click to get started</button>
+        </div>
+        <div class="result-row">
+          <div>
+            <span class="result-label">Last run</span>
+            <strong id="lastResult">—</strong>
+          </div>
+          <div>
+            <span class="result-label">Best run</span>
+            <strong id="bestResult">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <aside class="leaderboard-card">
+        <div class="section-head compact">
+          <div>
+            <p class="eyebrow">Leaderboard</p>
+            <h3>Best times</h3>
+          </div>
+        </div>
+
+        <div class="leader-highlight" id="leaderHighlight">
+          <div>
+            <span class="result-label">#1</span>
+            <strong id="leaderNick">—</strong>
+          </div>
+          <div class="highlight-time" id="leaderTime">—</div>
+        </div>
+
+        <ol id="leaderboardList" class="leaderboard-list"></ol>
+      </aside>
+    </section>
+
+    <p class="footnote">Built with Firebase Authentication and Cloud Firestore. Your passwords stay handled by Firebase Auth, while the app stores profile and score data under your account.</p>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
