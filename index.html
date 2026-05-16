@@ -5,26 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rash Reflex</title>
   <meta name="description" content="Rash Reflex is a clean reaction-time game built with Firebase login, nicknames, and a global leaderboard." />
+  <meta name="theme-color" content="#0b0f16" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Top Navigation Bar -->
   <nav class="top-nav hidden" id="topNav">
     <div class="nav-container">
       <div class="nav-brand">
         <div class="brand-mark-mini">RR</div>
         <span>Rash Reflex</span>
       </div>
+
       <ul class="nav-tabs">
-        <li><button class="nav-tab active" data-view="play" id="navPlay">PLAY</button></li>
-        <li><button class="nav-tab" data-view="leaderboard" id="navLeaderboard">LEADERBOARD</button></li>
-        <li><button class="nav-tab" data-view="stats" id="navStats">STATS</button></li>
-        <li><button class="nav-tab" data-view="profile" id="navProfile">PROFILE</button></li>
-        <li><button class="nav-tab" data-view="about" id="navAbout">ABOUT</button></li>
+        <li><button class="nav-tab active" data-view="play" id="navPlay" type="button">PLAY</button></li>
+        <li><button class="nav-tab" data-view="leaderboard" id="navLeaderboard" type="button">LEADERBOARD</button></li>
+        <li><button class="nav-tab" data-view="stats" id="navStats" type="button">STATS</button></li>
+        <li><button class="nav-tab" data-view="profile" id="navProfile" type="button">PROFILE</button></li>
+        <li><button class="nav-tab" data-view="about" id="navAbout" type="button">ABOUT</button></li>
       </ul>
+
       <div class="nav-profile-pill" id="navProfilePill">—</div>
     </div>
   </nav>
@@ -41,12 +43,12 @@
 
       <div class="hero-copy">
         <h2>Login</h2>
-        <p>Sign in, set your nickname once, and test your reflex against the clock.</p>
+        <p>Sign in, choose a nickname once, and test your reflex against the clock.</p>
       </div>
 
       <div class="auth-tabs" aria-label="authentication methods">
-        <button class="tab-btn active" data-auth-tab="email">Email / Password</button>
-        <button class="tab-btn" data-auth-tab="google">Google</button>
+        <button class="tab-btn active" data-auth-tab="email" type="button">Email / Password</button>
+        <button class="tab-btn" data-auth-tab="google" type="button">Google</button>
       </div>
 
       <form id="emailAuthForm" class="auth-form" autocomplete="on">
@@ -79,7 +81,7 @@
           <h2>Choose your nickname</h2>
         </div>
       </div>
-      <p class="helper-text">This nickname will stay linked to your account and will be used on the leaderboard.</p>
+      <p class="helper-text">This nickname stays linked to your account and appears on the leaderboard.</p>
       <form id="nicknameForm" class="auth-form">
         <label>
           <span>Nickname</span>
@@ -90,7 +92,6 @@
       <p class="subtle-text">One nickname per account. You can change it later from the profile area.</p>
     </section>
 
-    <!-- Play View -->
     <section class="game-layout hidden" id="playView">
       <div class="game-card">
         <div class="game-stage idle" id="gameStage">
@@ -98,13 +99,15 @@
             <h3>Click to get started</h3>
             <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
           </div>
-          <button id="gameButton" class="stage-button">Click to get started</button>
+          <button id="gameButton" class="stage-button" type="button">Click to get started</button>
         </div>
+
         <div class="feedback-zone hidden" id="feedbackZone">
           <div class="feedback-main" id="feedbackMain">—</div>
           <div class="feedback-sub" id="feedbackSub">—</div>
-          <button class="primary-btn feedback-again-btn" id="feedbackAgainBtn">Try again</button>
+          <button class="primary-btn feedback-again-btn" id="feedbackAgainBtn" type="button">Try again</button>
         </div>
+
         <div class="result-row">
           <div>
             <span class="result-label">Last run</span>
@@ -137,18 +140,16 @@
       </aside>
     </section>
 
-    <!-- Leaderboard View -->
     <section class="view-section hidden" id="leaderboardView">
       <div class="page-header">
         <h2>Leaderboard</h2>
-        <p class="subtitle">Top reaction times from our community</p>
+        <p class="subtitle">Top reaction times from all players</p>
       </div>
       <div class="leaderboard-card full-width">
         <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
       </div>
     </section>
 
-    <!-- Stats View -->
     <section class="view-section hidden" id="statsView">
       <div class="page-header">
         <h2>Your Statistics</h2>
@@ -182,7 +183,6 @@
       </div>
     </section>
 
-    <!-- Profile View -->
     <section class="view-section hidden" id="profileView">
       <div class="page-header">
         <h2>Profile</h2>
@@ -203,8 +203,8 @@
             <strong id="profileJoined">—</strong>
           </div>
         </div>
-        <button class="primary-btn" id="profileChangeNicknameBtn">Change Nickname</button>
-        <button class="ghost-btn" id="profileLogoutBtn">Logout</button>
+        <button class="primary-btn" id="profileChangeNicknameBtn" type="button">Change Nickname</button>
+        <button class="ghost-btn" id="profileLogoutBtn" type="button">Logout</button>
       </div>
       <div class="change-nickname-form hidden" id="changeNicknameForm">
         <form id="nicknameFormProfile">
@@ -212,15 +212,14 @@
             <span>New Nickname</span>
             <input id="nicknameInputProfile" type="text" placeholder="RashFlash" maxlength="20" required />
           </label>
-          <div style="display: flex; gap: 10px;">
-            <button type="submit" class="primary-btn" style="flex: 1;">Save</button>
-            <button type="button" class="ghost-btn" style="flex: 1;" id="cancelNicknameBtn">Cancel</button>
+          <div class="profile-actions">
+            <button type="submit" class="primary-btn">Save</button>
+            <button type="button" class="ghost-btn" id="cancelNicknameBtn">Cancel</button>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- About View -->
     <section class="view-section hidden" id="aboutView">
       <div class="page-header">
         <h2>How to Play</h2>
@@ -228,18 +227,18 @@
       </div>
       <div class="about-card">
         <div class="about-section">
-          <h3>📋 The Rules</h3>
+          <h3>Rules</h3>
           <ol class="rules-list">
-            <li><strong>Start a Round:</strong> Click the "Click to get started" button to begin.</li>
-            <li><strong>Wait for Green:</strong> The screen will turn red. Stay calm and wait for it to turn green.</li>
-            <li><strong>React Fast:</strong> When the screen turns green, click as quickly as possible. Milliseconds matter!</li>
-            <li><strong>No Early Clicks:</strong> If you click while the screen is still red, you'll have to restart the round.</li>
-            <li><strong>Get Feedback:</strong> After each attempt, you'll see how your reaction compares to your personal best.</li>
+            <li><strong>Start a Round:</strong> Click the start button to begin.</li>
+            <li><strong>Wait for Green:</strong> The screen turns red first, then green at a random time.</li>
+            <li><strong>React Fast:</strong> Click as soon as the screen becomes green. Milliseconds matter.</li>
+            <li><strong>Do Not Click Early:</strong> If you click while it is still red, the round restarts.</li>
+            <li><strong>Track Progress:</strong> Your best time and rank stay saved to your account.</li>
           </ol>
         </div>
 
         <div class="about-section">
-          <h3>⚡ Performance Tiers</h3>
+          <h3>Performance Tiers</h3>
           <div class="tier-grid">
             <div class="tier-card">
               <div class="tier-emoji">🐐</div>
@@ -273,26 +272,18 @@
         </div>
 
         <div class="about-section">
-          <h3>🏆 Compete & Track</h3>
-          <p>
-            Your best reaction time is saved to your account and displayed on the global leaderboard. 
-            Watch your statistics improve over time, see how you rank against other players, and challenge 
-            yourself to break your personal record. Every click counts!
-          </p>
+          <h3>Compete & Track</h3>
+          <p>Your best reaction time is saved to your account and shown on the leaderboard. Try to beat your own record and climb the rankings with cleaner, faster clicks.</p>
         </div>
 
         <div class="about-section">
-          <h3>🔒 Your Data is Safe</h3>
-          <p>
-            We use Firebase Authentication to keep your account secure. Your passwords are encrypted and 
-            never stored directly. Your game data is stored in Cloud Firestore and linked only to your account. 
-            You control your nickname and can change it anytime from your profile.
-          </p>
+          <h3>Security</h3>
+          <p>Firebase Authentication handles the login flow, and Firestore stores your nickname and scores. Passwords are never saved inside your app code or database.</p>
         </div>
       </div>
     </section>
 
-    <p class="footnote hidden" id="techFootnote">Built with Firebase Authentication and Cloud Firestore. Your passwords stay handled by Firebase Auth, while the app stores profile and score data under your account.</p>
+    <p class="footnote hidden" id="techFootnote">Built with Firebase Authentication and Cloud Firestore.</p>
   </main>
 
   <footer class="app-footer">

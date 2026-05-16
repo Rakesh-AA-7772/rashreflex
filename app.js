@@ -1,6 +1,5 @@
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
-import { getAnalytics } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js';
 import {
   getAuth,
   setPersistence,
@@ -22,20 +21,19 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  serverTimestamp,
-  getDocs
+  serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const analytics = getAnalytics(app);
 const googleProvider = new GoogleAuthProvider();
 
-await setPersistence(auth, browserLocalPersistence);
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 auth.languageCode = 'en';
 
-// DOM Elements
+await setPersistence(auth, browserLocalPersistence);
+
 const topNav = document.getElementById('topNav');
 const authView = document.getElementById('authView');
 const nicknameView = document.getElementById('nicknameView');
@@ -53,6 +51,7 @@ const nicknameForm = document.getElementById('nicknameForm');
 const nicknameInput = document.getElementById('nicknameInput');
 const googleSignInBtn = document.getElementById('googleSignInBtn');
 const googleAuthPanel = document.getElementById('googleAuthPanel');
+const logoutFromAuth = document.getElementById('logoutFromAuth');
 const tabBtns = [...document.querySelectorAll('.tab-btn')];
 
 const navTabs = [...document.querySelectorAll('.nav-tab')];
@@ -89,18 +88,47 @@ const changeNicknameForm = document.getElementById('changeNicknameForm');
 const nicknameFormProfile = document.getElementById('nicknameFormProfile');
 const nicknameInputProfile = document.getElementById('nicknameInputProfile');
 const cancelNicknameBtn = document.getElementById('cancelNicknameBtn');
+const techFootnote = document.getElementById('techFootnote');
 
 let currentUser = null;
 let profile = null;
-let allUsers = [];
-let phase = 'idle'; // idle | waiting | go | result
+let leaderboard = [];
+let currentView = 'play';
+let leaderboardUnsub = null;
 let waitTimer = null;
 let startTime = 0;
-let leaderboardUnsub = null;
-let currentView = 'play';
+let phase = 'idle';
 
 function setStatus(message) {
   authStatus.textContent = message;
+}
+
+function escapeNickname(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 20);
+}
+
+function formatMs(ms) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '—';
+  return `${Math.round(ms)} ms`;
+}
+
+function formatDate(value) {
+  if (!value) return '—';
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+}
+
+function clearWaitTimer() {
+  if (waitTimer) {
+    clearTimeout(waitTimer);
+    waitTimer = null;
+  }
+}
+
+function setStageState(state) {
+  gameStage.classList.remove('idle', 'waiting', 'go');
+  gameStage.classList.add(state);
 }
 
 function showView(view) {
@@ -111,64 +139,21 @@ function showView(view) {
   statsView.classList.toggle('hidden', view !== 'stats');
   profileView.classList.toggle('hidden', view !== 'profile');
   aboutView.classList.toggle('hidden', view !== 'about');
+  techFootnote.classList.toggle('hidden', view === 'auth' || view === 'nickname');
   topNav.classList.toggle('hidden', view === 'auth' || view === 'nickname');
   currentView = view;
-  
-  // Update nav active tab
-  navTabs.forEach(btn => btn.classList.remove('active'));
+
+  navTabs.forEach((btn) => btn.classList.remove('active'));
   const activeTab = document.querySelector(`[data-view="${view}"]`);
   if (activeTab) activeTab.classList.add('active');
 }
 
-function formatMs(ms) {
-  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '—';
-  return `${Math.round(ms)} ms`;
-}
-
-function formatDate(timestamp) {
-  if (!timestamp) return '—';
-  const date = timestamp.toDate?.() || new Date(timestamp);
-  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
-}
-
-function escapeNickname(name) {
-  return name.trim().replace(/\s+/g, ' ').slice(0, 20);
-}
-
-async function getOrCreateProfile(user) {
-  const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) {
-    return null;
-  }
-  return snap.data();
-}
-
-async function saveNickname(nickname) {
-  if (!currentUser) return;
-  const clean = escapeNickname(nickname);
-  if (!clean) throw new Error('Nickname cannot be empty.');
-  const userRef = doc(db, 'users', currentUser.uid);
-  const payload = {
-    uid: currentUser.uid,
-    email: currentUser.email,
-    nickname: clean,
-    bestTimeMs: profile?.bestTimeMs ?? null,
-    updatedAt: serverTimestamp()
-  };
-  if (!profile) {
-    payload.createdAt = serverTimestamp();
-  }
-  await setDoc(userRef, payload, { merge: true });
-  profile = { ...(profile || {}), ...payload, nickname: clean };
-}
-
 function resetGameStage() {
-  clearTimeout(waitTimer);
+  clearWaitTimer();
   phase = 'idle';
-  gameStage.classList.remove('waiting', 'go');
-  gameStage.classList.add('idle');
+  setStageState('idle');
   feedbackZone.classList.add('hidden');
+  feedbackZone.classList.remove('record-break');
   stageCopy.innerHTML = `
     <h3>Click to get started</h3>
     <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
@@ -178,12 +163,262 @@ function resetGameStage() {
   gameButton.classList.remove('hidden');
 }
 
+async function ensureUserDoc(user) {
+  const ref = doc(db, 'users', user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    const fresh = {
+      uid: user.uid,
+      email: user.email || '',
+      provider: user.providerData?.[0]?.providerId || 'password',
+      nickname: '',
+      bestTimeMs: null,
+      lastTimeMs: null,
+      attempts: 0,
+      failedAttempts: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(ref, fresh);
+    return fresh;
+  }
+
+  return snap.data();
+}
+
+async function persistProfilePatch(patch) {
+  if (!currentUser) return;
+  const ref = doc(db, 'users', currentUser.uid);
+  const nextProfile = {
+    ...(profile || {}),
+    ...patch,
+    uid: currentUser.uid,
+    email: currentUser.email || profile?.email || '',
+    updatedAt: serverTimestamp()
+  };
+  await setDoc(ref, nextProfile, { merge: true });
+  profile = { ...(profile || {}), ...patch };
+  return profile;
+}
+
+async function syncLeaderboardDoc(timeMs, kind = 'score') {
+  if (!currentUser || !profile?.nickname) return;
+  const ref = doc(db, 'leaderboard', currentUser.uid);
+
+  if (kind === 'nickname') {
+    if (typeof profile.bestTimeMs !== 'number') return;
+    await setDoc(ref, {
+      uid: currentUser.uid,
+      nickname: profile.nickname,
+      bestTimeMs: profile.bestTimeMs,
+      lastTimeMs: profile.lastTimeMs ?? profile.bestTimeMs,
+      attempts: profile.attempts ?? 0,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return;
+  }
+
+  const prevBest = typeof profile.bestTimeMs === 'number' ? profile.bestTimeMs : null;
+  const newBest = prevBest === null ? timeMs : Math.min(prevBest, timeMs);
+  const attempts = (profile.attempts ?? 0) + 1;
+
+  await setDoc(ref, {
+    uid: currentUser.uid,
+    nickname: profile.nickname,
+    bestTimeMs: newBest,
+    lastTimeMs: timeMs,
+    attempts,
+    updatedAt: serverTimestamp(),
+    createdAt: profile.createdAt || serverTimestamp()
+  }, { merge: true });
+
+  profile.bestTimeMs = newBest;
+  profile.lastTimeMs = timeMs;
+  profile.attempts = attempts;
+}
+
+async function saveNickname(rawNickname) {
+  const nickname = escapeNickname(rawNickname);
+  if (!nickname) throw new Error('Nickname cannot be empty.');
+
+  await persistProfilePatch({ nickname });
+
+  if (profile?.bestTimeMs !== null && profile?.bestTimeMs !== undefined) {
+    await syncLeaderboardDoc(profile.bestTimeMs, 'nickname');
+  }
+}
+
+function renderLeaderboard(rows) {
+  const safeRows = rows.filter((row) => typeof row.bestTimeMs === 'number' && row.bestTimeMs > 0);
+  leaderboard = safeRows;
+
+  leaderboardList.innerHTML = '';
+  leaderboardListFull.innerHTML = '';
+
+  if (!safeRows.length) {
+    leaderNick.textContent = 'No scores yet';
+    leaderTime.textContent = '—';
+    const empty = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
+    leaderboardList.innerHTML = empty;
+    leaderboardListFull.innerHTML = empty;
+    return;
+  }
+
+  const first = safeRows[0];
+  leaderNick.textContent = first.nickname || 'Anonymous';
+  leaderTime.textContent = formatMs(first.bestTimeMs);
+
+  safeRows.forEach((row, index) => {
+    const makeItem = () => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="lb-left">
+          <div class="rank">${index + 1}</div>
+          <div class="nick">${row.nickname || 'Anonymous'}</div>
+        </div>
+        <div class="time">${formatMs(row.bestTimeMs)}</div>
+      `;
+      return li;
+    };
+    leaderboardList.appendChild(makeItem());
+    leaderboardListFull.appendChild(makeItem());
+  });
+}
+
+function listenLeaderboard() {
+  if (leaderboardUnsub) leaderboardUnsub();
+
+  const leaderboardQuery = query(
+    collection(db, 'leaderboard'),
+    orderBy('bestTimeMs', 'asc'),
+    limit(10)
+  );
+
+  leaderboardUnsub = onSnapshot(
+    leaderboardQuery,
+    (snap) => {
+      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderLeaderboard(rows);
+      if (currentView === 'stats') updateStats().catch(() => {});
+    },
+    (error) => {
+      console.error(error);
+      leaderNick.textContent = 'Unavailable';
+      leaderTime.textContent = '—';
+      leaderboardList.innerHTML = '<li style="justify-content:center;color:var(--muted);">Leaderboard unavailable right now.</li>';
+      leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">Leaderboard unavailable right now.</li>';
+    }
+  );
+}
+
+async function updateStats() {
+  if (!currentUser || !profile) return;
+
+  const ref = doc(db, 'leaderboard', currentUser.uid);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? snap.data() : null;
+
+  const bestTime = data?.bestTimeMs ?? profile.bestTimeMs ?? null;
+  const lastTime = data?.lastTimeMs ?? profile.lastTimeMs ?? null;
+  const attempts = data?.attempts ?? profile.attempts ?? 0;
+  const failedAttempts = profile.failedAttempts ?? 0;
+
+  statsBestTime.textContent = formatMs(bestTime);
+  statsWorstTime.textContent = formatMs(lastTime);
+  statsAttempts.textContent = String(attempts);
+
+  if (attempts > 0 || failedAttempts > 0) {
+    const total = attempts + failedAttempts;
+    const successRate = total > 0 ? Math.round((attempts / total) * 100) : 0;
+    statsSuccess.textContent = `${successRate}%`;
+  } else {
+    statsSuccess.textContent = '—';
+  }
+
+  if (typeof bestTime === 'number' && leaderboard.length) {
+    const rank = leaderboard.findIndex((row) => row.id === currentUser.uid) + 1;
+    statsRank.textContent = rank > 0 ? `#${rank} of ${leaderboard.length}` : '—';
+  } else {
+    statsRank.textContent = '—';
+  }
+
+  if (typeof bestTime === 'number' && typeof lastTime === 'number') {
+    statsAvgTime.textContent = formatMs((bestTime + lastTime) / 2);
+  } else if (typeof bestTime === 'number') {
+    statsAvgTime.textContent = formatMs(bestTime);
+  } else {
+    statsAvgTime.textContent = '—';
+  }
+}
+
+async function updateProfileView() {
+  if (!currentUser || !profile) return;
+
+  profileNickname.textContent = profile.nickname || '—';
+  profileEmail.textContent = currentUser.email || '—';
+  profileJoined.textContent = formatDate(profile.createdAt);
+  navProfilePill.textContent = profile.nickname || currentUser.email || '—';
+
+  lastResult.textContent = formatMs(profile.lastTimeMs ?? null);
+  bestResult.textContent = formatMs(profile.bestTimeMs ?? null);
+
+  if (profile.nickname && typeof profile.bestTimeMs === 'number') {
+    syncLeaderboardDoc(profile.bestTimeMs, 'nickname').catch(console.error);
+  }
+}
+
+function getFeedbackMessage(timeMs) {
+  if (timeMs < 100) return { main: '🐐 GOAT LEVEL' };
+  if (timeMs < 200) return { main: '⚡ INSANE' };
+  if (timeMs < 300) return { main: '✓ GOOD' };
+  if (timeMs > 700) return { main: '🐢 SLOW' };
+  return { main: '✓ NOT BAD' };
+}
+
+function getRecordMessage(timeMs, bestTime) {
+  if (bestTime === null || bestTime === undefined) return 'First attempt saved to your account.';
+  if (timeMs < bestTime) {
+    const improvement = Math.round(bestTime - timeMs);
+    return `New personal best by ${improvement} ms.`;
+  }
+  const distance = Math.round(timeMs - bestTime);
+  if (distance < 10) return `So close. Only ${distance} ms away from your record.`;
+  if (distance < 50) return `${distance} ms away from your best time.`;
+  return `Your best remains ${formatMs(bestTime)}.`;
+}
+
+async function saveResult(timeMs) {
+  if (!currentUser || !profile?.nickname) return;
+
+  const prevBest = typeof profile.bestTimeMs === 'number' ? profile.bestTimeMs : null;
+  const bestTimeMs = prevBest === null ? timeMs : Math.min(prevBest, timeMs);
+  const attempts = (profile.attempts ?? 0) + 1;
+
+  profile.bestTimeMs = bestTimeMs;
+  profile.lastTimeMs = timeMs;
+  profile.attempts = attempts;
+
+  await persistProfilePatch({
+    bestTimeMs,
+    lastTimeMs: timeMs,
+    attempts
+  });
+
+  await syncLeaderboardDoc(timeMs, 'score');
+
+  lastResult.textContent = formatMs(timeMs);
+  bestResult.textContent = formatMs(bestTimeMs);
+}
+
 function startRound() {
   if (!currentUser || !profile?.nickname) return;
+
+  clearWaitTimer();
   phase = 'waiting';
-  gameStage.classList.remove('idle', 'go');
-  gameStage.classList.add('waiting');
   feedbackZone.classList.add('hidden');
+  feedbackZone.classList.remove('record-break');
+  setStageState('waiting');
   stageCopy.innerHTML = `
     <h3>Red screen</h3>
     <p>Stay calm. Wait for green.</p>
@@ -195,152 +430,125 @@ function startRound() {
   waitTimer = window.setTimeout(() => {
     phase = 'go';
     startTime = performance.now();
-    gameStage.classList.remove('waiting');
-    gameStage.classList.add('go');
+    setStageState('go');
     stageCopy.innerHTML = `
       <h3>Green screen</h3>
-      <p>Green screen is live. Click now!</p>
+      <p>Click now.</p>
     `;
     gameButton.textContent = 'Click!';
   }, delay);
 }
 
-async function saveResult(timeMs) {
-  if (!currentUser) return;
-  const userRef = doc(db, 'users', currentUser.uid);
-  const prevBest = typeof profile?.bestTimeMs === 'number' ? profile.bestTimeMs : null;
-  const newBest = prevBest === null ? timeMs : Math.min(prevBest, timeMs);
-  const attempts = (profile?.attempts ?? 0) + 1;
-
-  await setDoc(userRef, {
-    uid: currentUser.uid,
-    email: currentUser.email,
-    nickname: profile.nickname,
-    bestTimeMs: newBest,
-    lastTimeMs: timeMs,
-    attempts: attempts,
-    updatedAt: serverTimestamp(),
-    ...(profile?.createdAt ? {} : { createdAt: serverTimestamp() })
-  }, { merge: true });
-
-  profile.bestTimeMs = newBest;
-  profile.lastTimeMs = timeMs;
-  profile.attempts = attempts;
-  lastResult.textContent = formatMs(timeMs);
-  bestResult.textContent = formatMs(newBest);
-}
-
-function getFeedbackMessage(timeMs) {
-  if (timeMs < 100) return { main: '🐐 GOAT LEVEL 🐐', level: 'goat' };
-  if (timeMs < 200) return { main: '⚡ INSANE ⚡', level: 'insane' };
-  if (timeMs < 300) return { main: '✓ GOOD', level: 'good' };
-  if (timeMs > 700) return { main: '🐢 EVEN TORTOISE IS BETTER THAN YOU LOL', level: 'tortoise' };
-  return { main: '✓ NOT BAD', level: 'ok' };
-}
-
-function getRecordMessage(timeMs, bestTime) {
-  if (bestTime === null || bestTime === undefined) return '🎯 First attempt - looking good!';
-  
-  if (timeMs < bestTime) {
-    const improvement = Math.round(bestTime - timeMs);
-    return `🔥 RECORD TIME! 🔥 ${improvement} ms faster!`;
-  }
-  
-  const distance = Math.round(timeMs - bestTime);
-  if (distance < 10) return `⚡ So close! Only ${distance} ms away from record.`;
-  if (distance < 50) return `📊 ${distance} ms away from your record.`;
-  return `📊 ${distance} ms away from your best: ${formatMs(bestTime)}`;
-}
-
-function finishRound(timeMs) {
+async function finishRound(timeMs) {
+  clearWaitTimer();
   phase = 'result';
-  clearTimeout(waitTimer);
-  gameStage.classList.remove('waiting', 'go');
-  gameStage.classList.add('idle');
-  
+  setStageState('idle');
+
   const feedback = getFeedbackMessage(timeMs);
-  const recordMsg = getRecordMessage(timeMs, profile?.bestTimeMs ?? null);
-  
-  feedbackZone.classList.remove('hidden', 'record-break');
-  if (timeMs < profile?.bestTimeMs) {
-    feedbackZone.classList.add('record-break');
-  }
+  const recordText = getRecordMessage(timeMs, profile?.bestTimeMs ?? null);
+
+  feedbackZone.classList.remove('hidden');
+  feedbackZone.classList.toggle('record-break', typeof profile?.bestTimeMs === 'number' && timeMs < profile.bestTimeMs);
   feedbackMain.textContent = feedback.main;
-  feedbackSub.textContent = recordMsg;
-  
+  feedbackSub.textContent = recordText;
   stageCopy.innerHTML = '';
   gameButton.classList.add('hidden');
-  
-  void saveResult(timeMs);
+
+  try {
+    await saveResult(timeMs);
+    updateStats().catch(() => {});
+  } catch (error) {
+    console.error(error);
+    setStatus('Saved locally, but the score could not be stored yet.');
+  }
 }
 
-function tooSoon() {
-  clearTimeout(waitTimer);
-  phase = 'idle';
-  gameStage.classList.remove('go');
-  gameStage.classList.add('waiting');
+async function tooSoon() {
+  clearWaitTimer();
+  phase = 'tooSoon';
+  setStageState('waiting');
   feedbackZone.classList.add('hidden');
   stageCopy.innerHTML = `
-    <h3>Too early 😅</h3>
+    <h3>Too early</h3>
     <p>Wait for the green screen next time.</p>
   `;
   gameButton.textContent = 'Try again';
-  gameButton.disabled = false;
   gameButton.classList.remove('hidden');
-  setTimeout(() => {
-    if (phase !== 'go') resetGameStage();
+
+  try {
+    if (currentUser) {
+      profile.failedAttempts = (profile.failedAttempts ?? 0) + 1;
+      await persistProfilePatch({ failedAttempts: profile.failedAttempts });
+      updateStats().catch(() => {});
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  window.setTimeout(() => {
+    if (phase === 'tooSoon') resetGameStage();
   }, 1100);
 }
 
-function renderLeaderboard(rows) {
-  leaderboardList.innerHTML = '';
-  if (!rows.length) {
-    leaderNick.textContent = 'No scores yet';
-    leaderTime.textContent = '—';
-    leaderboardList.innerHTML = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
+async function routeAfterLogin(user) {
+  currentUser = user;
+  setStatus(`Signed in as ${user.email || user.uid}.`);
+
+  profile = await ensureUserDoc(user);
+  updateProfileView().catch(() => {});
+
+  if (!profile.nickname) {
+    showView('nickname');
+    nicknameInput.value = user.displayName || user.email?.split('@')[0] || '';
     return;
   }
 
-  const [first] = rows;
-  leaderNick.textContent = first.nickname || 'Anonymous';
-  leaderTime.textContent = formatMs(first.bestTimeMs);
-
-  rows.forEach((row, index) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <div class="lb-left">
-        <div class="rank">${index + 1}</div>
-        <div class="nick">${row.nickname || 'Anonymous'}</div>
-      </div>
-      <div class="time">${formatMs(row.bestTimeMs)}</div>
-    `;
-    leaderboardList.appendChild(li);
-  });
+  showView('play');
+  listenLeaderboard();
+  await updateStats();
+  resetGameStage();
 }
 
-function listenLeaderboard() {
-  if (leaderboardUnsub) leaderboardUnsub();
-  const q = query(collection(db, 'users'), orderBy('bestTimeMs', 'asc'), limit(10));
-  leaderboardUnsub = onSnapshot(q, (snap) => {
-    const rows = snap.docs
-      .map((doc) => doc.data())
-      .filter((item) => typeof item.bestTimeMs === 'number');
-    renderLeaderboard(rows);
-    if (currentView === 'leaderboard') renderLeaderboardFull(rows);
-    allUsers = rows;
-  }, () => {
-    leaderboardList.innerHTML = '<li style="justify-content:center;color:var(--muted);">Leaderboard unavailable right now.</li>';
-  });
+function safeErrorMessage(error) {
+  const code = error?.code || '';
+  if (code === 'auth/unauthorized-domain') {
+    return 'This domain is not authorized in Firebase Authentication. Add your localhost or Vercel domain in Firebase Console → Authentication → Settings → Authorized domains.';
+  }
+  if (code === 'auth/wrong-password') return 'Wrong password. Please try again.';
+  if (code === 'auth/invalid-credential') return 'Invalid login details.';
+  if (code === 'auth/popup-blocked') return 'Popup blocked by the browser.';
+  if (code === 'auth/popup-closed-by-user') return 'Google sign-in was closed before it finished.';
+  return error?.message || 'Something went wrong.';
 }
 
-function renderLeaderboardFull(rows) {
+tabBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.authTab;
+    emailAuthForm.classList.toggle('hidden', tab !== 'email');
+    googleAuthPanel.classList.toggle('hidden', tab !== 'google');
+  });
+});
+
+navTabs.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const view = btn.dataset.view;
+    showView(view);
+    if (view === 'leaderboard') renderLeaderboardFullFromMemory();
+    if (view === 'stats') updateStats().catch(console.error);
+    if (view === 'profile') updateProfileView().catch(() => {});
+  });
+});
+
+function renderLeaderboardFullFromMemory() {
   leaderboardListFull.innerHTML = '';
-  if (!rows.length) {
-    leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">No scores yet. Be the first!</li>';
+  if (!leaderboard.length) {
+    leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
     return;
   }
 
-  rows.forEach((row, index) => {
+  leaderboard.forEach((row, index) => {
     const li = document.createElement('li');
     li.innerHTML = `
       <div class="lb-left">
@@ -353,110 +561,18 @@ function renderLeaderboardFull(rows) {
   });
 }
 
-async function updateStats() {
-  if (!profile) return;
-  
-  // Get all times for this user
-  const userRef = doc(db, 'users', currentUser.uid);
-  const snap = await getDoc(userRef);
-  const userData = snap.data();
-  
-  const bestTime = userData?.bestTimeMs;
-  const lastTime = userData?.lastTimeMs;
-  const attempts = userData?.attempts ?? 0;
-  
-  // Get stats
-  statsBestTime.textContent = formatMs(bestTime);
-  statsWorstTime.textContent = formatMs(lastTime);
-  statsAttempts.textContent = attempts || '0';
-  statsSuccess.textContent = attempts > 0 ? '100%' : '—';
-  
-  // Calculate rank
-  if (allUsers.length > 0 && bestTime) {
-    const rank = allUsers.findIndex(u => u.bestTimeMs === bestTime) + 1;
-    const totalUsers = allUsers.length;
-    statsRank.textContent = `#${rank} of ${totalUsers}`;
-  } else {
-    statsRank.textContent = '—';
-  }
-  
-  // Average time (we'll estimate from best and last)
-  if (bestTime && lastTime) {
-    const avgEstimate = Math.round((bestTime + lastTime) / 2);
-    statsAvgTime.textContent = formatMs(avgEstimate);
-  } else if (bestTime) {
-    statsAvgTime.textContent = formatMs(bestTime);
-  } else {
-    statsAvgTime.textContent = '—';
-  }
-}
-
-function updateProfileView() {
-  if (!currentUser || !profile) return;
-  
-  profileNickname.textContent = profile.nickname || '—';
-  profileEmail.textContent = currentUser.email || '—';
-  profileJoined.textContent = formatDate(profile.createdAt);
-  navProfilePill.textContent = profile.nickname || currentUser.email || '—';
-}
-
-async function routeAfterLogin(user) {
-  currentUser = user;
-  setStatus(`Signed in as ${user.email}.`);
-  const existing = await getOrCreateProfile(user);
-  profile = existing;
-
-  if (!existing || !existing.nickname) {
-    showView('nickname');
-    nicknameInput.value = existing?.nickname || '';
-    return;
-  }
-
-  showView('play');
-  updateProfileView();
-  listenLeaderboard();
-  updateStats();
-  resetGameStage();
-}
-
-// Navigation
-navTabs.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const view = btn.dataset.view;
-    showView(view);
-    if (view === 'leaderboard' && allUsers.length > 0) {
-      renderLeaderboardFull(allUsers);
-    }
-    if (view === 'stats') {
-      updateStats();
-    }
-    if (view === 'profile') {
-      updateProfileView();
-    }
-  });
-});
-
-// Auth tabs
-  btn.addEventListener('click', () => {
-    tabBtns.forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    const tab = btn.dataset.authTab;
-    emailAuthForm.classList.toggle('hidden', tab !== 'email');
-    googleAuthPanel.classList.toggle('hidden', tab !== 'google');
-  });
-
-
 emailAuthForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = authEmail.value.trim();
   const password = authPassword.value;
+
   try {
     setStatus('Signing in...');
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       await routeAfterLogin(cred.user);
     } catch (error) {
-      if (error.code === 'auth/user-not-found') {
+      if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found') {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await routeAfterLogin(cred.user);
       } else {
@@ -465,7 +581,7 @@ emailAuthForm.addEventListener('submit', async (e) => {
     }
   } catch (error) {
     console.error(error);
-    setStatus(error.message || 'Login failed.');
+    setStatus(safeErrorMessage(error));
   }
 });
 
@@ -476,7 +592,7 @@ googleSignInBtn.addEventListener('click', async () => {
     await routeAfterLogin(cred.user);
   } catch (error) {
     console.error(error);
-    setStatus(error.message || 'Google sign-in failed.');
+    setStatus(safeErrorMessage(error));
   }
 });
 
@@ -485,26 +601,27 @@ logoutFromAuth.addEventListener('click', async () => {
     await signOut(auth);
   } catch (error) {
     console.error(error);
+    setStatus(safeErrorMessage(error));
   }
 });
 
 nicknameForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   try {
     const nickname = escapeNickname(nicknameInput.value);
     await saveNickname(nickname);
     showView('play');
-    updateProfileView();
     listenLeaderboard();
-    updateStats();
+    await updateStats();
+    await updateProfileView();
     resetGameStage();
   } catch (error) {
     console.error(error);
-    setStatus(error.message || 'Could not save nickname.');
+    setStatus(safeErrorMessage(error));
   }
 });
 
-// Profile management
 profileChangeNicknameBtn.addEventListener('click', () => {
   nicknameInputProfile.value = profile?.nickname || '';
   changeNicknameForm.classList.remove('hidden');
@@ -516,14 +633,16 @@ cancelNicknameBtn.addEventListener('click', () => {
 
 nicknameFormProfile.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   try {
     const nickname = escapeNickname(nicknameInputProfile.value);
     await saveNickname(nickname);
+    await updateProfileView();
     changeNicknameForm.classList.add('hidden');
-    updateProfileView();
+    if (currentView === 'leaderboard') renderLeaderboardFullFromMemory();
   } catch (error) {
     console.error(error);
-    setStatus(error.message || 'Could not update nickname.');
+    setStatus(safeErrorMessage(error));
   }
 });
 
@@ -535,28 +654,23 @@ profileLogoutBtn.addEventListener('click', async () => {
   }
 });
 
-// Game interaction
 gameButton.addEventListener('click', () => {
   if (!currentUser || !profile?.nickname) return;
-  if (phase === 'idle' || phase === 'result') {
-    feedbackAgainBtn.onclick = null;
-    gameButton.classList.remove('hidden');
+
+  if (phase === 'idle' || phase === 'result' || phase === 'tooSoon') {
     startRound();
     return;
   }
+
   if (phase === 'waiting') {
     tooSoon();
     return;
   }
+
   if (phase === 'go') {
     const timeMs = performance.now() - startTime;
-    finishRound(timeMs);
+    finishRound(timeMs).catch(console.error);
   }
-});
-
-feedbackAgainBtn.addEventListener('click', () => {
-  resetGameStage();
-  startRound();
 });
 
 gameStage.addEventListener('click', (e) => {
@@ -564,19 +678,39 @@ gameStage.addEventListener('click', (e) => {
   gameButton.click();
 });
 
-// Auth state
+feedbackAgainBtn.addEventListener('click', () => {
+  resetGameStage();
+  startRound();
+});
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
     profile = null;
+    leaderboard = [];
+    clearWaitTimer();
     showView('auth');
-    if (leaderboardUnsub) leaderboardUnsub();
-    authStatus.textContent = 'Not signed in.';
+    setStatus('Not signed in.');
     authEmail.value = '';
     authPassword.value = '';
+    if (leaderboardUnsub) {
+      leaderboardUnsub();
+      leaderboardUnsub = null;
+    }
+    leaderboardList.innerHTML = '';
+    leaderboardListFull.innerHTML = '';
+    leaderNick.textContent = '—';
+    leaderTime.textContent = '—';
+    resetGameStage();
     return;
   }
-  await routeAfterLogin(user);
+
+  try {
+    await routeAfterLogin(user);
+  } catch (error) {
+    console.error(error);
+    setStatus(safeErrorMessage(error));
+  }
 });
 
 resetGameStage();
