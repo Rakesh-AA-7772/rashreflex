@@ -41,6 +41,7 @@ const techFootnote = $('techFootnote');
 const authStatus = $('authStatus');
 const nicknameForm = $('nicknameForm');
 const nicknameInput = $('nicknameInput');
+const nicknameColor = $('nicknameColor');
 
 const navTabs = [...document.querySelectorAll('.nav-tab')];
 const navProfilePill = $('navProfilePill');
@@ -55,9 +56,8 @@ const feedbackAgainBtn = $('feedbackAgainBtn');
 const lastResult = $('lastResult');
 const bestResult = $('bestResult');
 
-const leaderNick = $('leaderNick');
-const leaderTime = $('leaderTime');
-const leaderboardList = $('leaderboardList');
+const leaderNickFull = $('leaderNickFull');
+const leaderTimeFull = $('leaderTimeFull');
 const leaderboardListFull = $('leaderboardListFull');
 
 const statsBestTime = $('statsBestTime');
@@ -68,13 +68,7 @@ const statsRank = $('statsRank');
 const statsSuccess = $('statsSuccess');
 
 const profileNickname = $('profileNickname');
-const profileJoined = $('profileJoined');
-const profileChangeNicknameBtn = $('profileChangeNicknameBtn');
-const profileResetBtn = $('profileResetBtn');
-const changeNicknameForm = $('changeNicknameForm');
-const nicknameFormProfile = $('nicknameFormProfile');
-const nicknameInputProfile = $('nicknameInputProfile');
-const cancelNicknameBtn = $('cancelNicknameBtn');
+const profileNicknameColorPreview = $('profileNicknameColorPreview');
 
 let currentUser = null;
 let profile = null;
@@ -188,7 +182,7 @@ async function ensureUserDoc(user) {
 }
 
 async function persistProfilePatch(patch) {
-  if (!currentUser) return null;
+  if (!currentUser) return;
 
   const ref = doc(db, 'users', currentUser.uid);
   const nextProfile = {
@@ -217,6 +211,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
       {
         uid: currentUser.uid,
         nickname: profile.nickname,
+        nicknameColor: profile.nicknameColor || '#5eead4',
         bestTimeMs: profile.bestTimeMs,
         lastTimeMs: profile.lastTimeMs ?? profile.bestTimeMs,
         attempts: profile.attempts ?? 0,
@@ -236,6 +231,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
     {
       uid: currentUser.uid,
       nickname: profile.nickname,
+      nicknameColor: profile.nicknameColor || '#5eead4',
       bestTimeMs: newBest,
       lastTimeMs: timeMs,
       attempts,
@@ -250,11 +246,12 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
   profile.attempts = attempts;
 }
 
-async function saveNickname(rawNickname) {
+async function saveNickname(rawNickname, rawColor) {
   const nickname = escapeNickname(rawNickname);
   if (!nickname) throw new Error('Nickname cannot be empty.');
 
-  await persistProfilePatch({ nickname });
+  const nicknameColor = rawColor || '#5eead4';
+  await persistProfilePatch({ nickname, nicknameColor });
 
   if (typeof profile?.bestTimeMs === 'number') {
     await syncLeaderboardDoc(profile.bestTimeMs, 'nickname');
@@ -265,37 +262,32 @@ function renderLeaderboard(rows) {
   const safeRows = rows.filter((row) => typeof row.bestTimeMs === 'number' && row.bestTimeMs > 0);
   leaderboard = safeRows;
 
-  if (leaderboardList) leaderboardList.innerHTML = '';
   if (leaderboardListFull) leaderboardListFull.innerHTML = '';
 
   if (!safeRows.length) {
-    if (leaderNick) leaderNick.textContent = 'No scores yet';
-    if (leaderTime) leaderTime.textContent = '—';
+    if (leaderNickFull) leaderNickFull.textContent = 'No scores yet';
+    if (leaderTimeFull) leaderTimeFull.textContent = '—';
     const empty = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
-    if (leaderboardList) leaderboardList.innerHTML = empty;
     if (leaderboardListFull) leaderboardListFull.innerHTML = empty;
     return;
   }
 
   const first = safeRows[0];
-  if (leaderNick) leaderNick.textContent = first.nickname || 'Anonymous';
-  if (leaderTime) leaderTime.textContent = formatMs(first.bestTimeMs);
+  if (leaderNickFull) leaderNickFull.textContent = first.nickname || 'Anonymous';
+  if (leaderNickFull && first.nicknameColor) leaderNickFull.style.color = first.nicknameColor;
+  if (leaderTimeFull) leaderTimeFull.textContent = formatMs(first.bestTimeMs);
 
   safeRows.forEach((row, index) => {
-    const makeItem = () => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <div class="lb-left">
-          <div class="rank">${index + 1}</div>
-          <div class="nick">${row.nickname || 'Anonymous'}</div>
-        </div>
-        <div class="time">${formatMs(row.bestTimeMs)}</div>
-      `;
-      return li;
-    };
-
-    if (leaderboardList) leaderboardList.appendChild(makeItem());
-    if (leaderboardListFull) leaderboardListFull.appendChild(makeItem());
+    const li = document.createElement('li');
+    const nickColor = row.nicknameColor || '#e8edf5';
+    li.innerHTML = `
+      <div class="lb-left">
+        <div class="rank">${index + 1}</div>
+        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
+      </div>
+      <div class="time">${formatMs(row.bestTimeMs)}</div>
+    `;
+    if (leaderboardListFull) leaderboardListFull.appendChild(li);
   });
 }
 
@@ -310,10 +302,11 @@ function renderLeaderboardFullFromMemory() {
 
   leaderboard.forEach((row, index) => {
     const li = document.createElement('li');
+    const nickColor = row.nicknameColor || '#e8edf5';
     li.innerHTML = `
       <div class="lb-left">
         <div class="rank">${index + 1}</div>
-        <div class="nick">${row.nickname || 'Anonymous'}</div>
+        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
       </div>
       <div class="time">${formatMs(row.bestTimeMs)}</div>
     `;
@@ -391,7 +384,8 @@ async function updateProfileView() {
   if (!currentUser || !profile) return;
 
   if (profileNickname) profileNickname.textContent = profile.nickname || '—';
-  if (profileJoined) profileJoined.textContent = formatDate(profile.createdAt);
+  if (profileNickname && profile.nicknameColor) profileNickname.style.color = profile.nicknameColor;
+  if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#5eead4';
 
   if (navProfilePill) {
     navProfilePill.textContent = profile.nickname || currentUser.email || '—';
@@ -567,7 +561,6 @@ async function enterApp() {
 
 async function routeAfterLogin(user) {
   currentUser = user;
-  setStatus('Session ready.');
 
   profile = await ensureUserDoc(user);
   await updateProfileView();
@@ -598,6 +591,7 @@ if (nicknameForm) {
     e.preventDefault();
 
     const nickname = escapeNickname(nicknameInput?.value);
+    const color = nicknameColor?.value || '#5eead4';
 
     if (!nickname) {
       setStatus('Please enter a nickname.');
@@ -618,13 +612,15 @@ if (nicknameForm) {
       }
 
       profile = await ensureUserDoc(currentUser);
-      await saveNickname(nickname);
+      await saveNickname(nickname, color);
       await enterApp();
     } catch (error) {
-      console.error(error);
+      console.error('Auth error:', error);
       setStatus(safeErrorMessage(error));
     }
   });
+} else {
+  console.warn('nicknameForm element not found');
 }
 
 if (navTabs.length) {
@@ -636,50 +632,6 @@ if (navTabs.length) {
       if (view === 'stats') updateStats().catch(console.error);
       if (view === 'profile') updateProfileView().catch(() => {});
     });
-  });
-}
-
-if (profileChangeNicknameBtn) {
-  profileChangeNicknameBtn.addEventListener('click', () => {
-    if (nicknameInputProfile) nicknameInputProfile.value = profile?.nickname || '';
-    if (changeNicknameForm) changeNicknameForm.classList.remove('hidden');
-  });
-}
-
-if (cancelNicknameBtn) {
-  cancelNicknameBtn.addEventListener('click', () => {
-    if (changeNicknameForm) changeNicknameForm.classList.add('hidden');
-  });
-}
-
-if (nicknameFormProfile) {
-  nicknameFormProfile.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    try {
-      const nickname = escapeNickname(nicknameInputProfile?.value);
-      await saveNickname(nickname);
-      await updateProfileView();
-      if (changeNicknameForm) changeNicknameForm.classList.add('hidden');
-      if (currentView === 'leaderboard') renderLeaderboardFullFromMemory();
-    } catch (error) {
-      console.error(error);
-      setStatus(safeErrorMessage(error));
-    }
-  });
-}
-
-if (profileResetBtn) {
-  profileResetBtn.addEventListener('click', async () => {
-    try {
-      await signOut(auth);
-      if (nicknameInput) nicknameInput.value = '';
-      showView('auth');
-      setStatus('Signed out. Enter a new nickname to continue.');
-    } catch (error) {
-      console.error(error);
-      setStatus(safeErrorMessage(error));
-    }
   });
 }
 
@@ -734,10 +686,9 @@ onAuthStateChanged(auth, async (user) => {
       leaderboardUnsub = null;
     }
 
-    if (leaderboardList) leaderboardList.innerHTML = '';
     if (leaderboardListFull) leaderboardListFull.innerHTML = '';
-    if (leaderNick) leaderNick.textContent = '—';
-    if (leaderTime) leaderTime.textContent = '—';
+    if (leaderNickFull) leaderNickFull.textContent = '—';
+    if (leaderTimeFull) leaderTimeFull.textContent = '—';
 
     resetGameStage();
     return;

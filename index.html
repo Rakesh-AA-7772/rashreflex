@@ -51,6 +51,10 @@
           <span>Nickname</span>
           <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
         </label>
+        <label>
+          <span>Nickname Color</span>
+          <input id="nicknameColor" type="color" value="#5eead4" />
+        </label>
         <button type="submit" class="primary-btn">Start Playing</button>
       </form>
 
@@ -84,25 +88,6 @@
           </div>
         </div>
       </div>
-
-      <aside class="leaderboard-card">
-        <div class="section-head compact">
-          <div>
-            <p class="eyebrow">Leaderboard</p>
-            <h3>Best times</h3>
-          </div>
-        </div>
-
-        <div class="leader-highlight" id="leaderHighlight">
-          <div>
-            <span class="result-label">#1</span>
-            <strong id="leaderNick">—</strong>
-          </div>
-          <div class="highlight-time" id="leaderTime">—</div>
-        </div>
-
-        <ol id="leaderboardList" class="leaderboard-list"></ol>
-      </aside>
     </section>
 
     <section class="view-section hidden" id="leaderboardView">
@@ -111,6 +96,13 @@
         <p class="subtitle">Top reaction times from all players</p>
       </div>
       <div class="leaderboard-card full-width">
+        <div class="leader-highlight-full" id="leaderHighlightFull">
+          <div>
+            <span class="result-label">#1</span>
+            <strong id="leaderNickFull">—</strong>
+          </div>
+          <div class="highlight-time" id="leaderTimeFull">—</div>
+        </div>
         <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
       </div>
     </section>
@@ -157,27 +149,12 @@
         <div class="profile-info">
           <div class="profile-item">
             <span class="profile-label">Nickname</span>
-            <strong id="profileNickname">—</strong>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Member Since</span>
-            <strong id="profileJoined">—</strong>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <strong id="profileNickname">—</strong>
+              <div id="profileNicknameColorPreview" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);"></div>
+            </div>
           </div>
         </div>
-        <button class="primary-btn" id="profileChangeNicknameBtn" type="button">Change Nickname</button>
-        <button class="ghost-btn" id="profileResetBtn" type="button">Change User</button>
-      </div>
-      <div class="change-nickname-form hidden" id="changeNicknameForm">
-        <form id="nicknameFormProfile">
-          <label>
-            <span>New Nickname</span>
-            <input id="nicknameInputProfile" type="text" placeholder="RashFlash" maxlength="20" required />
-          </label>
-          <div class="profile-actions">
-            <button type="submit" class="primary-btn">Save</button>
-            <button type="button" class="ghost-btn" id="cancelNicknameBtn">Cancel</button>
-          </div>
-        </form>
       </div>
     </section>
 
