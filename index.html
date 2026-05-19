@@ -15,10 +15,12 @@
 <body>
   <nav class="top-nav hidden" id="topNav">
     <div class="nav-container">
-      <div class="nav-brand">
-        <img class="brand-mark-mini" src="logo.png" alt="Rash Reflex Logo" />
-        <span>Rash Reflex</span>
-      </div>
+      <a href="#" id="navBrandClick" class="nav-brand-link" style="text-decoration:none;">
+        <div class="nav-brand">
+          <img class="brand-mark-mini brand-mark-gradient" src="logo.png" alt="Rash Reflex Logo" />
+          <span>Rash Reflex</span>
+        </div>
+      </a>
 
       <ul class="nav-tabs">
         <li><button class="nav-tab active" data-view="play" id="navPlay" type="button">PLAY</button></li>
@@ -34,13 +36,15 @@
 
   <main class="app-shell">
     <section class="hero-card" id="authView">
-      <div class="brand-row">
-        <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
-        <div>
-          <p class="eyebrow">Reaction test</p>
-          <h1>Rash Reflex</h1>
+      <a href="#" id="navBrandClickHero" class="brand-link-hero">
+        <div class="brand-row">
+          <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
+          <div>
+            <p class="eyebrow">Reaction test</p>
+            <h1>Rash Reflex</h1>
+          </div>
         </div>
-      </div>
+      </a>
 
       <div class="hero-copy">
         <h2>Choose Your Nickname</h2>
@@ -53,7 +57,7 @@
         </label>
         <label>
           <span>Nickname Color</span>
-          <input id="nicknameColor" type="color" value="#5eead4" />
+          <input id="nicknameColor" type="color" value="#00fff7" />
         </label>
         <button type="submit" class="primary-btn">Start Playing</button>
       </form>
@@ -95,14 +99,7 @@
         <h2>Leaderboard</h2>
         <p class="subtitle">Top reaction times from all players</p>
       </div>
-      <div class="leaderboard-card full-width">
-        <div class="leader-highlight-full" id="leaderHighlightFull">
-          <div>
-            <span class="result-label">#1</span>
-            <strong id="leaderNickFull">—</strong>
-          </div>
-          <div class="highlight-time" id="leaderTimeFull">—</div>
-        </div>
+
         <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
       </div>
     </section>

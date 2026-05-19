@@ -209,7 +209,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
       {
         uid: currentUser.uid,
         nickname: profile.nickname,
-        nicknameColor: profile.nicknameColor || '#5eead4',
+        nicknameColor: profile.nicknameColor || '#00fff7',
         bestTimeMs: profile.bestTimeMs,
         lastTimeMs: profile.lastTimeMs ?? profile.bestTimeMs,
         averageTimeMs: profile.averageTimeMs || profile.bestTimeMs,
@@ -232,7 +232,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
     {
       uid: currentUser.uid,
       nickname: profile.nickname,
-      nicknameColor: profile.nicknameColor || '#5eead4',
+      nicknameColor: profile.nicknameColor || '#00fff7',
       bestTimeMs: newBest,
       lastTimeMs: timeMs,
       averageTimeMs: newAvg,
@@ -253,7 +253,7 @@ async function saveNickname(rawNickname, rawColor) {
   const nickname = escapeNickname(rawNickname);
   if (!nickname) throw new Error('Nickname cannot be empty.');
 
-  const nicknameColor = rawColor || '#5eead4';
+  const nicknameColor = rawColor || '#00fff7';
   await persistProfilePatch({ nickname, nicknameColor });
 
   if (typeof profile?.bestTimeMs === 'number') {
@@ -285,9 +285,10 @@ function renderLeaderboard(rows) {
     const nickColor = row.nicknameColor || '#e8edf5';
     const avgTime = row.averageTimeMs || row.bestTimeMs;
     const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+    const rankDisplay = index < 3 ? `#${index + 1}` : `${index + 1}`;
     li.innerHTML = `
       <div class="lb-left">
-        <div class="rank ${rankClass}">${index + 1}</div>
+        <div class="rank ${rankClass}">${rankDisplay}</div>
         <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -313,9 +314,10 @@ function renderLeaderboardFullFromMemory() {
     const nickColor = row.nicknameColor || '#e8edf5';
     const avgTime = row.averageTimeMs || row.bestTimeMs;
     const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+    const rankDisplay = index < 3 ? `#${index + 1}` : `${index + 1}`;
     li.innerHTML = `
       <div class="lb-left">
-        <div class="rank ${rankClass}">${index + 1}</div>
+        <div class="rank ${rankClass}">${rankDisplay}</div>
         <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -398,7 +400,7 @@ async function updateProfileView() {
 
   if (profileNickname) profileNickname.textContent = profile.nickname || '—';
   if (profileNickname && profile.nicknameColor) profileNickname.style.color = profile.nicknameColor;
-  if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#5eead4';
+  if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#00fff7';
 
   if (navProfilePill) {
     navProfilePill.textContent = profile.nickname || currentUser.email || '—';
@@ -586,6 +588,7 @@ async function routeAfterLogin(user) {
     return;
   }
 
+  // User has a nickname, automatically enter the app
   await enterApp();
 }
 
@@ -600,12 +603,29 @@ function safeErrorMessage(error) {
 }
 
 function initializeEventListeners() {
+  const navBrandClick = $('navBrandClick');
+  const navBrandClickHero = document.getElementById('navBrandClickHero');
+  
+  if (navBrandClick) {
+    navBrandClick.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentView !== 'about') showView('about');
+    });
+  }
+  
+  if (navBrandClickHero) {
+    navBrandClickHero.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentView !== 'about') showView('about');
+    });
+  }
+  
   if (nicknameForm) {
     nicknameForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const nickname = escapeNickname(nicknameInput?.value);
-      const color = nicknameColor?.value || '#5eead4';
+      const color = nicknameColor?.value || '#00fff7';
 
       if (!nickname) {
         setStatus('Please enter a nickname.');
