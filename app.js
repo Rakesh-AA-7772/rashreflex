@@ -122,7 +122,6 @@ function showView(view) {
   if (statsView) statsView.classList.toggle('hidden', view !== 'stats');
   if (profileView) profileView.classList.toggle('hidden', view !== 'profile');
   if (aboutView) aboutView.classList.toggle('hidden', view !== 'about');
-  if (techFootnote) techFootnote.classList.toggle('hidden', view === 'auth');
   if (topNav) topNav.classList.toggle('hidden', view === 'auth');
 
   currentView = view;
