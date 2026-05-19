@@ -36,15 +36,13 @@
 
   <main class="app-shell">
     <section class="hero-card" id="authView">
-      <a href="#" id="navBrandClickHero" class="brand-link-hero">
-        <div class="brand-row">
-          <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
-          <div>
-            <p class="eyebrow">Reaction test</p>
-            <h1>Rash Reflex</h1>
-          </div>
+      <div class="brand-row">
+        <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
+        <div>
+          <p class="eyebrow">Reaction test</p>
+          <h1>Rash Reflex</h1>
         </div>
-      </a>
+      </div>
 
       <div class="hero-copy">
         <h2>Choose Your Nickname</h2>
@@ -56,8 +54,15 @@
           <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
         </label>
         <label>
-          <span>Nickname Color</span>
-          <input id="nicknameColor" type="color" value="#00fff7" />
+          <span>Choose Your Color</span>
+          <div class="color-picker-grid">
+            <button type="button" class="color-btn" data-color="#E8B923" title="Mustard Yellow" style="background-color:#E8B923;"></button>
+            <button type="button" class="color-btn" data-color="#0a1f3b" title="Navy Blue" style="background-color:#0a1f3b;"></button>
+            <button type="button" class="color-btn" data-color="#FFB6D9" title="Blush Pink" style="background-color:#FFB6D9;"></button>
+            <button type="button" class="color-btn" data-color="#0B6623" title="Forest Green" style="background-color:#0B6623;"></button>
+            <button type="button" class="color-btn" data-color="#F5F5F5" title="Crisp White" style="background-color:#F5F5F5; border: 2px solid var(--line);"></button>
+          </div>
+          <input id="nicknameColor" type="hidden" value="#E8B923" required />
         </label>
         <button type="submit" class="primary-btn">Start Playing</button>
       </form>
@@ -130,11 +135,8 @@
           <span class="stats-label">Your Rank</span>
           <strong class="stats-value" id="statsRank">—</strong>
         </div>
-        <div class="stats-card">
-          <span class="stats-label">Success Rate</span>
-          <strong class="stats-value" id="statsSuccess">—</strong>
-        </div>
       </div>
+      <button class="primary-btn reset-stats-btn" id="resetStatsBtn" type="button">Reset Stats</button>
     </section>
 
     <section class="view-section hidden" id="profileView">
@@ -221,7 +223,7 @@
   </main>
 
   <footer class="app-footer">
-    <p class="footer-credit">MADE BY RAKESH WITH <span class="heart-icon">❤️</span></p>
+    <p class="footer-credit">Made by Rakesh <a href="https://discord.com/users/1276957718636265556" target="_blank" rel="noopener noreferrer" class="discord-link">Discord↗</a></p>
   </footer>
 
   <script type="module" src="app.js"></script>

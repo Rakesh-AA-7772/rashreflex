@@ -250,6 +250,36 @@ label span {
   font-weight: 600;
 }
 
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.color-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+  border-color: rgba(0,255,247,0.6);
+  box-shadow: 0 0 15px rgba(0,255,247,0.4);
+}
+
+.color-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(0,255,247,0.8), inset 0 0 0 2px rgba(0,0,0,0.5);
+  transform: scale(1.15);
+}
+
 input {
   width: 100%;
   padding: 14px 16px;
@@ -265,6 +295,10 @@ input[type="color"] {
   height: 44px;
   padding: 4px;
   cursor: pointer;
+}
+
+input[type="hidden"] {
+  display: none;
 }
 input:focus {
   border-color: rgba(0,255,247,0.7);
@@ -293,7 +327,17 @@ input:focus {
   border: 1px solid var(--line);
 }
 
-.full-width { width: 100%; }
+.reset-stats-btn {
+  display: block;
+  margin: 28px auto 0;
+  background: rgba(248, 113, 113, 0.8);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+}
+
+.reset-stats-btn:hover {
+  background: rgba(248, 113, 113, 1);
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.4);
+}
 .status-line, .subtle-text { margin: 12px 0 0; }
 
 .game-layout {
@@ -711,13 +755,14 @@ input:focus {
   font-weight: 700;
 }
 
-.heart-icon {
-  display: inline-block;
-  animation: heartbeat 1.2s ease-in-out infinite;
+.discord-link {
+  color: var(--accent);
+  text-decoration: none;
+  transition: filter 0.2s ease;
 }
-@keyframes heartbeat {
-  0%,100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+
+.discord-link:hover {
+  filter: brightness(1.2);
 }
 
 @media (max-width: 940px) {

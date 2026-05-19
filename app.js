@@ -13,11 +13,14 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   query,
   orderBy,
+  where,
   limit,
   onSnapshot,
+  getDocs,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
@@ -209,7 +212,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
       {
         uid: currentUser.uid,
         nickname: profile.nickname,
-        nicknameColor: profile.nicknameColor || '#00fff7',
+        nicknameColor: profile.nicknameColor || '#E8B923',
         bestTimeMs: profile.bestTimeMs,
         lastTimeMs: profile.lastTimeMs ?? profile.bestTimeMs,
         averageTimeMs: profile.averageTimeMs || profile.bestTimeMs,
@@ -232,7 +235,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
     {
       uid: currentUser.uid,
       nickname: profile.nickname,
-      nicknameColor: profile.nicknameColor || '#00fff7',
+      nicknameColor: profile.nicknameColor || '#E8B923',
       bestTimeMs: newBest,
       lastTimeMs: timeMs,
       averageTimeMs: newAvg,
@@ -253,7 +256,7 @@ async function saveNickname(rawNickname, rawColor) {
   const nickname = escapeNickname(rawNickname);
   if (!nickname) throw new Error('Nickname cannot be empty.');
 
-  const nicknameColor = rawColor || '#00fff7';
+  const nicknameColor = rawColor || '#E8B923';
   await persistProfilePatch({ nickname, nicknameColor });
 
   if (typeof profile?.bestTimeMs === 'number') {
@@ -371,14 +374,6 @@ async function updateStats() {
   if (statsWorstTime) statsWorstTime.textContent = formatMs(lastTime);
   if (statsAttempts) statsAttempts.textContent = String(attempts);
 
-  if (attempts > 0 || failedAttempts > 0) {
-    const total = attempts + failedAttempts;
-    const successRate = total > 0 ? Math.round((attempts / total) * 100) : 0;
-    if (statsSuccess) statsSuccess.textContent = `${successRate}%`;
-  } else if (statsSuccess) {
-    statsSuccess.textContent = '—';
-  }
-
   if (typeof bestTime === 'number' && leaderboard.length) {
     const rank = leaderboard.findIndex((row) => row.id === currentUser.uid) + 1;
     if (statsRank) statsRank.textContent = rank > 0 ? `#${rank} of ${leaderboard.length}` : '—';
@@ -400,7 +395,7 @@ async function updateProfileView() {
 
   if (profileNickname) profileNickname.textContent = profile.nickname || '—';
   if (profileNickname && profile.nicknameColor) profileNickname.style.color = profile.nicknameColor;
-  if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#00fff7';
+  if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#E8B923';
 
   if (navProfilePill) {
     navProfilePill.textContent = profile.nickname || currentUser.email || '—';
@@ -604,19 +599,73 @@ function safeErrorMessage(error) {
 
 function initializeEventListeners() {
   const navBrandClick = $('navBrandClick');
-  const navBrandClickHero = document.getElementById('navBrandClickHero');
   
+  // Logo click in game navbar goes to PLAY (not about)
   if (navBrandClick) {
     navBrandClick.addEventListener('click', (e) => {
       e.preventDefault();
-      if (currentView !== 'about') showView('about');
+      if (currentView === 'play') return; // Already on play
+      showView('play');
     });
   }
   
-  if (navBrandClickHero) {
-    navBrandClickHero.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (currentView !== 'about') showView('about');
+  // Color button selection in auth
+  const colorBtns = document.querySelectorAll('.color-btn');
+  if (colorBtns.length > 0) {
+    colorBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const color = btn.dataset.color;
+        
+        // Update hidden input
+        const colorInput = $('nicknameColor');
+        if (colorInput) colorInput.value = color;
+        
+        // Update active state
+        colorBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    
+    // Set initial active state to first button
+    if (colorBtns[0]) colorBtns[0].classList.add('active');
+  }
+  
+  // Reset stats button
+  const resetStatsBtn = $('resetStatsBtn');
+  if (resetStatsBtn) {
+    resetStatsBtn.addEventListener('click', async () => {
+      if (!currentUser) return;
+      
+      const confirm = window.confirm('Are you sure? This will delete all your stats and remove you from the leaderboard.');
+      if (!confirm) return;
+      
+      try {
+        setStatus('Resetting your stats...');
+        
+        // Delete from leaderboard
+        const leaderboardRef = doc(db, 'leaderboard', currentUser.uid);
+        await deleteDoc(leaderboardRef);
+        
+        // Reset user profile
+        profile = await persistProfilePatch({
+          bestTimeMs: null,
+          lastTimeMs: null,
+          averageTimeMs: null,
+          attempts: 0,
+          failedAttempts: 0
+        });
+        
+        // Refresh stats display
+        await updateStats();
+        await updateProfileView();
+        listenLeaderboard();
+        
+        setStatus('Stats reset successfully!');
+      } catch (error) {
+        console.error(error);
+        setStatus('Failed to reset stats.');
+      }
     });
   }
   
@@ -625,7 +674,7 @@ function initializeEventListeners() {
       e.preventDefault();
 
       const nickname = escapeNickname(nicknameInput?.value);
-      const color = nicknameColor?.value || '#00fff7';
+      const color = nicknameColor?.value || '#E8B923';
 
       if (!nickname) {
         setStatus('Please enter a nickname.');
@@ -633,6 +682,25 @@ function initializeEventListeners() {
       }
 
       try {
+        setStatus('Checking nickname availability...');
+        
+        // Check if nickname + color combination already exists
+        const leaderboardSnap = await getDoc(doc(db, 'leaderboard', nickname + color));
+        const usersSnap = await getDoc(doc(db, 'users', nickname + color));
+        
+        // Query leaderboard for existing nickname+color combo
+        const leaderboardQuery = query(
+          collection(db, 'leaderboard'),
+          where('nickname', '==', nickname),
+          where('nicknameColor', '==', color)
+        );
+        const leaderboardDocs = await getDocs(leaderboardQuery);
+        
+        if (leaderboardDocs.size > 0) {
+          setStatus('This nickname with this color is already taken. Choose a different combination.');
+          return;
+        }
+        
         setStatus('Starting game...');
 
         if (!auth.currentUser) {
