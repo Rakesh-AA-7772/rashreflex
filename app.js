@@ -36,7 +36,6 @@ const leaderboardView = $('leaderboardView');
 const statsView = $('statsView');
 const profileView = $('profileView');
 const aboutView = $('aboutView');
-const techFootnote = $('techFootnote');
 
 const authStatus = $('authStatus');
 const nicknameForm = $('nicknameForm');
@@ -214,6 +213,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
         nicknameColor: profile.nicknameColor || '#5eead4',
         bestTimeMs: profile.bestTimeMs,
         lastTimeMs: profile.lastTimeMs ?? profile.bestTimeMs,
+        averageTimeMs: profile.averageTimeMs || profile.bestTimeMs,
         attempts: profile.attempts ?? 0,
         updatedAt: serverTimestamp()
       },
@@ -225,6 +225,8 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
   const prevBest = typeof profile.bestTimeMs === 'number' ? profile.bestTimeMs : null;
   const newBest = prevBest === null ? timeMs : Math.min(prevBest, timeMs);
   const attempts = (profile.attempts ?? 0) + 1;
+  const prevAvg = typeof profile.averageTimeMs === 'number' ? profile.averageTimeMs : null;
+  const newAvg = prevAvg === null ? timeMs : (prevAvg * (attempts - 1) + timeMs) / attempts;
 
   await setDoc(
     ref,
@@ -234,6 +236,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
       nicknameColor: profile.nicknameColor || '#5eead4',
       bestTimeMs: newBest,
       lastTimeMs: timeMs,
+      averageTimeMs: newAvg,
       attempts,
       updatedAt: serverTimestamp(),
       createdAt: profile.createdAt || serverTimestamp()
@@ -243,6 +246,7 @@ async function syncLeaderboardDoc(timeMs, kind = 'score') {
 
   profile.bestTimeMs = newBest;
   profile.lastTimeMs = timeMs;
+  profile.averageTimeMs = newAvg;
   profile.attempts = attempts;
 }
 
@@ -280,12 +284,17 @@ function renderLeaderboard(rows) {
   safeRows.forEach((row, index) => {
     const li = document.createElement('li');
     const nickColor = row.nicknameColor || '#e8edf5';
+    const avgTime = row.averageTimeMs || row.bestTimeMs;
+    const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
     li.innerHTML = `
       <div class="lb-left">
-        <div class="rank">${index + 1}</div>
+        <div class="rank ${rankClass}">${index + 1}</div>
         <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
       </div>
-      <div class="time">${formatMs(row.bestTimeMs)}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Best: </span>${formatMs(row.bestTimeMs)}</div>
+        <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Avg: </span>${formatMs(avgTime)}</div>
+      </div>
     `;
     if (leaderboardListFull) leaderboardListFull.appendChild(li);
   });
@@ -303,12 +312,17 @@ function renderLeaderboardFullFromMemory() {
   leaderboard.forEach((row, index) => {
     const li = document.createElement('li');
     const nickColor = row.nicknameColor || '#e8edf5';
+    const avgTime = row.averageTimeMs || row.bestTimeMs;
+    const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
     li.innerHTML = `
       <div class="lb-left">
-        <div class="rank">${index + 1}</div>
+        <div class="rank ${rankClass}">${index + 1}</div>
         <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
       </div>
-      <div class="time">${formatMs(row.bestTimeMs)}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Best: </span>${formatMs(row.bestTimeMs)}</div>
+        <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Avg: </span>${formatMs(avgTime)}</div>
+      </div>
     `;
     leaderboardListFull.appendChild(li);
   });
@@ -586,88 +600,97 @@ function safeErrorMessage(error) {
   return error?.message || 'Something went wrong.';
 }
 
-if (nicknameForm) {
-  nicknameForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+function initializeEventListeners() {
+  if (nicknameForm) {
+    nicknameForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    const nickname = escapeNickname(nicknameInput?.value);
-    const color = nicknameColor?.value || '#5eead4';
+      const nickname = escapeNickname(nicknameInput?.value);
+      const color = nicknameColor?.value || '#5eead4';
 
-    if (!nickname) {
-      setStatus('Please enter a nickname.');
-      return;
-    }
-
-    try {
-      setStatus('Starting game...');
-
-      if (!auth.currentUser) {
-        await signInAnonymously(auth);
+      if (!nickname) {
+        setStatus('Please enter a nickname.');
+        return;
       }
 
-      currentUser = auth.currentUser || currentUser;
+      try {
+        setStatus('Starting game...');
 
-      if (!currentUser) {
-        throw new Error('Unable to start session.');
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+
+        currentUser = auth.currentUser || currentUser;
+
+        if (!currentUser) {
+          throw new Error('Unable to start session.');
+        }
+
+        profile = await ensureUserDoc(currentUser);
+        await saveNickname(nickname, color);
+        await enterApp();
+      } catch (error) {
+        console.error('Auth error:', error);
+        setStatus(safeErrorMessage(error));
       }
-
-      profile = await ensureUserDoc(currentUser);
-      await saveNickname(nickname, color);
-      await enterApp();
-    } catch (error) {
-      console.error('Auth error:', error);
-      setStatus(safeErrorMessage(error));
-    }
-  });
-} else {
-  console.warn('nicknameForm element not found');
-}
-
-if (navTabs.length) {
-  navTabs.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const view = btn.dataset.view;
-      showView(view);
-      if (view === 'leaderboard') renderLeaderboardFullFromMemory();
-      if (view === 'stats') updateStats().catch(console.error);
-      if (view === 'profile') updateProfileView().catch(() => {});
     });
-  });
-}
+  } else {
+    console.warn('nicknameForm element not found');
+  }
 
-if (gameButton) {
-  gameButton.addEventListener('click', () => {
-    if (!currentUser || !profile?.nickname) return;
+  if (navTabs.length) {
+    navTabs.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        showView(view);
+        if (view === 'leaderboard') renderLeaderboardFullFromMemory();
+        if (view === 'stats') updateStats().catch(console.error);
+        if (view === 'profile') updateProfileView().catch(() => {});
+      });
+    });
+  }
 
-    if (phase === 'idle' || phase === 'result' || phase === 'tooSoon') {
+  if (gameButton) {
+    gameButton.addEventListener('click', () => {
+      if (!currentUser || !profile?.nickname) return;
+
+      if (phase === 'idle' || phase === 'result' || phase === 'tooSoon') {
+        startRound();
+        return;
+      }
+
+      if (phase === 'waiting') {
+        tooSoon();
+        return;
+      }
+
+      if (phase === 'go') {
+        const timeMs = performance.now() - startTime;
+        finishRound(timeMs).catch(console.error);
+      }
+    });
+  }
+
+  if (gameStage) {
+    gameStage.addEventListener('click', (e) => {
+      if (e.target === gameButton) return;
+      gameButton?.click();
+    });
+  }
+
+  if (feedbackAgainBtn) {
+    feedbackAgainBtn.addEventListener('click', () => {
+      resetGameStage();
       startRound();
-      return;
-    }
-
-    if (phase === 'waiting') {
-      tooSoon();
-      return;
-    }
-
-    if (phase === 'go') {
-      const timeMs = performance.now() - startTime;
-      finishRound(timeMs).catch(console.error);
-    }
-  });
+    });
+  }
 }
 
-if (gameStage) {
-  gameStage.addEventListener('click', (e) => {
-    if (e.target === gameButton) return;
-    gameButton?.click();
-  });
-}
-
-if (feedbackAgainBtn) {
-  feedbackAgainBtn.addEventListener('click', () => {
-    resetGameStage();
-    startRound();
-  });
+// Initialize event listeners when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeEventListeners);
+} else {
+  initializeEventListeners();
 }
 
 onAuthStateChanged(auth, async (user) => {

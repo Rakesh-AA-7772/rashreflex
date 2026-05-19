@@ -58,18 +58,13 @@ button { cursor: pointer; }
 }
 
 .brand-mark-mini, .brand-mark {
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(94,234,212,0.2), rgba(34,197,94,0.18));
-  border: 1px solid rgba(94,234,212,0.22);
+  object-fit: contain;
 }
 
 .brand-mark-mini {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  font-size: 0.84rem;
-  font-weight: 800;
 }
 
 .nav-tabs {
@@ -147,9 +142,6 @@ button { cursor: pointer; }
   width: 54px;
   height: 54px;
   border-radius: 16px;
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
 }
 
 .eyebrow {
@@ -270,17 +262,17 @@ input:focus {
   grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .game-card, .leaderboard-card {
-  padding: 22px;
+  padding: 28px;
   border-radius: var(--radius);
 }
 
 .game-stage {
-  min-height: 360px;
+  min-height: 480px;
   border-radius: 22px;
   border: 1px solid var(--line);
   display: grid;
@@ -318,7 +310,8 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 28px;
+  min-height: 80px;
 }
 
 .result-row > div, .leader-highlight, .stats-card, .tier-card {
@@ -386,7 +379,7 @@ input:focus {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(255,255,255,0.04);
@@ -401,15 +394,37 @@ input:focus {
 }
 
 .rank {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   background: rgba(94,234,212,0.12);
   border: 1px solid rgba(94,234,212,0.20);
   font-weight: 800;
   flex: 0 0 auto;
+  font-size: 0.95rem;
+}
+
+.rank.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #1a1a1a;
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.rank.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  color: #1a1a1a;
+  border: 1px solid #c0c0c0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.4);
+}
+
+.rank.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+  color: #fff;
+  border: 1px solid #cd7f32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.4);
 }
 
 .nick {
@@ -436,12 +451,13 @@ input:focus {
 }
 
 .feedback-zone {
-  margin-top: 16px;
+  margin-top: 24px;
   padding: 32px 24px;
   text-align: center;
   background: rgba(255,255,255,0.04);
   border-radius: 20px;
   border: 1px solid var(--line);
+  min-height: auto;
 }
 
 .feedback-main {
