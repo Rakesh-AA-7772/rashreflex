@@ -57,6 +57,7 @@ const feedbackSub = $('feedbackSub');
 const feedbackAgainBtn = $('feedbackAgainBtn');
 const lastResult = $('lastResult');
 const bestResult = $('bestResult');
+const tooSlowIndicator = $('tooSlowIndicator');
 
 const leaderNickFull = $('leaderNickFull');
 const leaderTimeFull = $('leaderTimeFull');
@@ -80,6 +81,9 @@ let leaderboardUnsub = null;
 let waitTimer = null;
 let startTime = 0;
 let phase = 'idle';
+let currentDifficulty = 'easy';
+let comboCount = 0;
+let sessionHighestCombo = 0;
 
 function setStatus(message) {
   if (authStatus) authStatus.textContent = message;
@@ -116,6 +120,41 @@ function setStageState(state) {
   if (!gameStage) return;
   gameStage.classList.remove('idle', 'waiting', 'go');
   gameStage.classList.add(state);
+}
+
+function getDifficultyConfig(difficulty) {
+  const configs = {
+    easy: { waitMin: 800, waitMax: 1500, name: 'EASY', color: '#00ff41' },
+    medium: { waitMin: 500, waitMax: 1200, name: 'MEDIUM', color: '#ffa500' },
+    hard: { waitMin: 300, waitMax: 1000, name: 'HARD', color: '#ff3333' }
+  };
+  return configs[difficulty] || configs.easy;
+}
+
+function updateComboDisplay() {
+  const comboElement = document.getElementById('comboValue');
+  const comboDisplay = document.getElementById('comboDisplay');
+  if (!comboElement || !comboDisplay) return;
+  
+  comboElement.textContent = comboCount;
+  comboDisplay.classList.remove('combo-break', 'milestone');
+  
+  // Milestone animations every 5 combos
+  if (comboCount > 0 && comboCount % 5 === 0) {
+    comboDisplay.classList.add('milestone');
+  }
+}
+
+function breakCombo() {
+  if (comboCount > 0) {
+    const comboDisplay = document.getElementById('comboDisplay');
+    if (comboDisplay) {
+      comboDisplay.classList.add('combo-break');
+      setTimeout(() => comboDisplay.classList.remove('combo-break'), 400);
+    }
+  }
+  comboCount = 0;
+  updateComboDisplay();
 }
 
 function showView(view) {
@@ -478,7 +517,10 @@ function startRound() {
     gameButton.classList.remove('hidden');
   }
 
-  const delay = Math.floor(1500 + Math.random() * 3500);
+  // Get difficulty-based wait times
+  const config = getDifficultyConfig(currentDifficulty);
+  const delay = Math.floor(config.waitMin + Math.random() * (config.waitMax - config.waitMin));
+  
   waitTimer = window.setTimeout(() => {
     phase = 'go';
     startTime = performance.now();
@@ -501,6 +543,13 @@ async function finishRound(timeMs) {
   clearWaitTimer();
   phase = 'result';
   setStageState('idle');
+
+  // Increment combo on successful click
+  comboCount++;
+  if (comboCount > sessionHighestCombo) {
+    sessionHighestCombo = comboCount;
+  }
+  updateComboDisplay();
 
   const feedback = getFeedbackMessage(timeMs);
   const recordText = getRecordMessage(timeMs, profile?.bestTimeMs ?? null);
@@ -530,9 +579,36 @@ async function finishRound(timeMs) {
 async function tooSoon() {
   clearWaitTimer();
   phase = 'tooSoon';
-  setStageState('waiting');
+  
+  // Break combo
+  breakCombo();
+  
+  // DRAMATIC FAILURE EFFECTS
+  if (gameStage) {
+    gameStage.classList.add('stage-fail');
+    // Remove animation class after animation ends
+    setTimeout(() => {
+      gameStage.classList.remove('stage-fail');
+    }, 800);
+  }
 
-  if (feedbackZone) feedbackZone.classList.add('hidden');
+  // Show "TOO SLOW" indicator
+  if (tooSlowIndicator) {
+    tooSlowIndicator.classList.remove('hidden');
+    setTimeout(() => {
+      tooSlowIndicator.classList.add('hidden');
+    }, 600);
+  }
+
+  // Trigger vibration on mobile
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100, 50, 200]);
+  }
+
+  if (feedbackZone) {
+    feedbackZone.classList.remove('hidden');
+    feedbackZone.classList.add('too-soon');
+  }
 
   if (stageCopy) {
     stageCopy.innerHTML = `
@@ -557,8 +633,11 @@ async function tooSoon() {
   }
 
   window.setTimeout(() => {
-    if (phase === 'tooSoon') resetGameStage();
-  }, 1100);
+    if (phase === 'tooSoon') {
+      if (feedbackZone) feedbackZone.classList.remove('too-soon');
+      resetGameStage();
+    }
+  }, 1600);
 }
 
 async function enterApp() {
@@ -768,6 +847,33 @@ function initializeEventListeners() {
         finishRound(timeMs).catch(console.error);
       }
     });
+  }
+
+  // Difficulty button listeners
+  const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+  if (difficultyBtns.length > 0) {
+    difficultyBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const difficulty = btn.dataset.difficulty;
+        if (!difficulty) return;
+        
+        // Update global state
+        currentDifficulty = difficulty;
+        
+        // Update active button state
+        difficultyBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Reset game stage if in progress
+        if (phase !== 'idle') {
+          resetGameStage();
+        }
+      });
+    });
+    
+    // Set initial active state to easy button
+    const easyBtn = document.querySelector('[data-difficulty="easy"]');
+    if (easyBtn) easyBtn.classList.add('active');
   }
 
   if (gameStage) {

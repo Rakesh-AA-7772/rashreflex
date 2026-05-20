@@ -72,12 +72,26 @@
 
     <section class="game-layout hidden" id="playView">
       <div class="game-card">
+        <!-- DIFFICULTY & COMBO DISPLAY -->
+        <div class="game-header">
+          <div class="difficulty-selector" id="difficultySelector">
+            <button class="difficulty-btn active" data-difficulty="easy" type="button">EASY</button>
+            <button class="difficulty-btn" data-difficulty="medium" type="button">MEDIUM</button>
+            <button class="difficulty-btn" data-difficulty="hard" type="button">HARD</button>
+          </div>
+          <div class="combo-display" id="comboDisplay">
+            <span class="combo-label">COMBO</span>
+            <span class="combo-value" id="comboValue">0</span>
+          </div>
+        </div>
+
         <div class="game-stage idle" id="gameStage">
           <div class="stage-copy" id="stageCopy">
             <h3>Click to get started</h3>
             <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
           </div>
           <button id="gameButton" class="stage-button" type="button">Click to get started</button>
+          <div class="too-slow-indicator hidden" id="tooSlowIndicator">TOO SLOW</div>
         </div>
 
         <div class="feedback-zone hidden" id="feedbackZone">
