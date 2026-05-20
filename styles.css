@@ -349,37 +349,37 @@ input:focus {
   width: 100%;
   margin: 0;
   min-height: calc(100vh - 80px);
+  background: linear-gradient(180deg, #0a0e14 0%, #0d1320 100%);
 }
 
 .game-card, .leaderboard-card {
-  padding: 40px;
+  padding: 0;
   border-radius: 0;
 }
 
 .game-card {
-  background: linear-gradient(180deg, #0a0e14 0%, #0d1320 100%);
+  background: transparent;
   border: none;
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 800px;
+  height: 100%;
+  padding: 40px 20px;
 }
 
 .game-stage {
   min-height: 500px;
-  border-radius: 32px;
-  border: 2px solid var(--line);
+  border-radius: 0;
+  border: none;
   display: grid;
   place-items: center;
   text-align: center;
-  padding: 60px 40px;
+  padding: 80px 40px;
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-  max-width: 720px;
   width: 100%;
+  flex: 1;
 }
 .game-stage.idle { background: linear-gradient(180deg, #0d1320 0%, #080f1a 100%); border-color: rgba(0, 255, 247, 0.15); }
 .game-stage.waiting { background: linear-gradient(180deg, #3d0a0a 0%, #1a0505 100%); border-color: var(--bright-red); box-shadow: 0 0 40px rgba(255, 51, 51, 0.3); }
@@ -411,9 +411,9 @@ input:focus {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 28px;
-  min-height: 110px;
-  max-width: 720px;
+  min-height: 120px;
   width: 100%;
+  padding: 0 20px;
 }
 
 .result-row > div, .leader-highlight, .stats-card, .tier-card {
@@ -563,12 +563,12 @@ input:focus {
   background: rgba(255,255,255,0.04);
   border-radius: 20px;
   border: 1px solid var(--line);
-  min-height: 160px;
-  max-width: 720px;
+  min-height: 200px;
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 0 20px;
 }
 
 .feedback-main {
