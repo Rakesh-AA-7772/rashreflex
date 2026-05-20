@@ -656,12 +656,24 @@ function initializeEventListeners() {
           failedAttempts: 0
         });
         
-        // Refresh stats display
-        await updateStats();
-        await updateProfileView();
+        // Refresh displays immediately
+        if (lastResult) lastResult.textContent = '—';
+        if (bestResult) bestResult.textContent = '—';
+        if (statsBestTime) statsBestTime.textContent = '—';
+        if (statsWorstTime) statsWorstTime.textContent = '—';
+        if (statsAttempts) statsAttempts.textContent = '0';
+        if (statsAvgTime) statsAvgTime.textContent = '—';
+        if (statsRank) statsRank.textContent = '—';
+        
+        // Clear leaderboard and re-listen
+        leaderboard = [];
+        if (leaderboardListFull) leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
         listenLeaderboard();
         
         setStatus('Stats reset successfully!');
+        
+        // Re-render leaderboard if viewing it
+        if (currentView === 'leaderboard') renderLeaderboardFullFromMemory();
       } catch (error) {
         console.error(error);
         setStatus('Failed to reset stats.');
