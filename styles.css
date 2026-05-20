@@ -382,8 +382,8 @@ input:focus {
   flex: 1;
 }
 .game-stage.idle { background: linear-gradient(180deg, #0d1320 0%, #080f1a 100%); border-color: rgba(0, 255, 247, 0.15); }
-.game-stage.waiting { background: linear-gradient(180deg, #3d0a0a 0%, #1a0505 100%); border-color: var(--bright-red); box-shadow: 0 0 40px rgba(255, 51, 51, 0.3); }
-.game-stage.go { background: linear-gradient(180deg, #0a3d1a 0%, #051a0a 100%); border-color: var(--bright-green); box-shadow: 0 0 40px rgba(0, 255, 65, 0.3); }
+.game-stage.waiting { background: #FF0000; border: none; box-shadow: 0 0 60px rgba(255, 0, 0, 0.6); }
+.game-stage.go { background: #00FF00; border: none; box-shadow: 0 0 60px rgba(0, 255, 0, 0.6); }
 
 .stage-copy h3 {
   margin-bottom: 8px;
@@ -393,6 +393,11 @@ input:focus {
   margin-bottom: 0;
   color: rgba(231,236,243,0.78);
   max-width: 34ch;
+}
+
+.game-stage.waiting .stage-copy,
+.game-stage.go .stage-copy {
+  display: none;
 }
 
 .stage-button {
@@ -568,7 +573,12 @@ input:focus {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 20px;
+  visibility: hidden;
+  pointer-events: none;
+}
+.feedback-zone:not(.hidden) {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .feedback-main {
@@ -579,16 +589,10 @@ input:focus {
   font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 800;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #00fff7, #00ff41);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 .feedback-zone.record-break .feedback-main {
-  background: linear-gradient(135deg, #fbbf24, #f97316);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #FFD700;
 }
 
 .feedback-sub {
