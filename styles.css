@@ -752,11 +752,20 @@ input:focus {
   flex-direction: column;
   justify-content: center;
   visibility: hidden;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 .feedback-zone:not(.hidden) {
   visibility: visible;
+  opacity: 1;
   pointer-events: auto;
+}
+.feedback-zone.hidden {
+  display: flex !important;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .feedback-main {

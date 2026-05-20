@@ -1,3 +1,54 @@
+function startRound() {
+  if (!currentUser || !profile?.nickname) return;
+
+  clearWaitTimer();
+  stopAllGameSounds();
+  ensureGameSounds();
+  phase = 'waiting';
+
+  if (feedbackZone) {
+    feedbackZone.classList.add('hidden');
+    feedbackZone.classList.remove('record-break', 'too-soon');
+  }
+
+  setStageState('waiting');
+  playSound(waitingSound);
+
+  if (stageCopy) {
+    stageCopy.innerHTML = `
+      <h3>Red screen</h3>
+      <p>Stay calm. Wait for green.</p>
+    `;
+  }
+
+  if (gameButton) {
+    gameButton.textContent = 'Waiting...';
+    gameButton.disabled = false;
+    gameButton.classList.remove('hidden');
+  }
+
+  // Get difficulty-based wait times
+  const config = getDifficultyConfig(currentDifficulty);
+  const delay = Math.floor(config.waitMin + Math.random() * (config.waitMax - config.waitMin));
+  
+  waitTimer = window.setTimeout(() => {
+    phase = 'go';
+    startTime = performance.now();
+    stopSound(waitingSound);
+    setStageState('go');
+
+    if (stageCopy) {
+      stageCopy.innerHTML = `
+        <h3>Green screen</h3>
+        <p>Click now.</p>
+      `;
+    }
+
+    if (gameButton) {
+      gameButton.textContent = 'Click!';
+    }
+  }, delay);
+}
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
 import {
@@ -85,6 +136,10 @@ let currentDifficulty = 'easy';
 let comboCount = 0;
 let sessionHighestCombo = 0;
 
+let waitingSound = null;
+let greenClickSound = null;
+let failSound = null;
+
 function setStatus(message) {
   if (authStatus) authStatus.textContent = message;
 }
@@ -114,6 +169,49 @@ function clearWaitTimer() {
     clearTimeout(waitTimer);
     waitTimer = null;
   }
+}
+
+function createSound(src, { loop = false, volume = 1 } = {}) {
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.loop = loop;
+  audio.volume = volume;
+  return audio;
+}
+
+function stopSound(audio) {
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (error) {
+    console.warn('Unable to stop sound:', error);
+  }
+}
+
+function playSound(audio) {
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {});
+    }
+  } catch (error) {
+    console.warn('Unable to play sound:', error);
+  }
+}
+
+function stopAllGameSounds() {
+  stopSound(waitingSound);
+  stopSound(greenClickSound);
+  stopSound(failSound);
+}
+
+function ensureGameSounds() {
+  waitingSound = waitingSound || createSound('waiting.mp3', { loop: true, volume: 0.75 });
+  greenClickSound = greenClickSound || createSound('green-click.mp3', { volume: 0.85 });
+  failSound = failSound || createSound('fail.mp3', { volume: 0.85 });
 }
 
 function setStageState(state) {
@@ -175,12 +273,13 @@ function showView(view) {
 
 function resetGameStage() {
   clearWaitTimer();
+  stopAllGameSounds();
   phase = 'idle';
   setStageState('idle');
 
   if (feedbackZone) {
     feedbackZone.classList.add('hidden');
-    feedbackZone.classList.remove('record-break');
+    feedbackZone.classList.remove('record-break', 'too-soon');
   }
 
   if (stageCopy) {
@@ -541,6 +640,7 @@ function startRound() {
 
 async function finishRound(timeMs) {
   clearWaitTimer();
+  stopAllGameSounds();
   phase = 'result';
   setStageState('idle');
 
@@ -562,10 +662,12 @@ async function finishRound(timeMs) {
     );
   }
 
-  if (feedbackMain) feedbackMain.textContent = feedback.main;
-  if (feedbackSub) feedbackSub.textContent = recordText;
+  if (feedbackMain) feedbackMain.textContent = formatMs(timeMs);
+  if (feedbackSub) feedbackSub.textContent = `${feedback.main}. ${recordText}`;
   if (stageCopy) stageCopy.innerHTML = '';
   if (gameButton) gameButton.classList.add('hidden');
+
+  playSound(greenClickSound);
 
   try {
     await saveResult(timeMs);
@@ -578,11 +680,15 @@ async function finishRound(timeMs) {
 
 async function tooSoon() {
   clearWaitTimer();
+  stopAllGameSounds();
+  ensureGameSounds();
   phase = 'tooSoon';
-  
+
+  playSound(failSound);
+
   // Break combo
   breakCombo();
-  
+
   // DRAMATIC FAILURE EFFECTS
   if (gameStage) {
     gameStage.classList.add('stage-fail');
@@ -634,6 +740,73 @@ async function tooSoon() {
 
   window.setTimeout(() => {
     if (phase === 'tooSoon') {
+      if (feedbackZone) feedbackZone.classList.remove('too-soon');
+      resetGameStage();
+    }
+  }, 1600);
+}
+
+async function tooLate(timeMs) {
+  clearWaitTimer();
+  stopAllGameSounds();
+  ensureGameSounds();
+  phase = 'tooLate';
+
+  playSound(failSound);
+
+  breakCombo();
+
+  if (gameStage) {
+    gameStage.classList.add('stage-fail');
+    setTimeout(() => {
+      gameStage.classList.remove('stage-fail');
+    }, 800);
+  }
+
+  if (tooSlowIndicator) {
+    tooSlowIndicator.textContent = 'TOO LATE';
+    tooSlowIndicator.classList.remove('hidden');
+    setTimeout(() => {
+      tooSlowIndicator.textContent = 'TOO SLOW';
+      tooSlowIndicator.classList.add('hidden');
+    }, 600);
+  }
+
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100, 50, 200]);
+  }
+
+  if (feedbackZone) {
+    feedbackZone.classList.remove('hidden');
+    feedbackZone.classList.add('too-soon');
+  }
+
+  if (feedbackMain) feedbackMain.textContent = formatMs(timeMs);
+  if (feedbackSub) feedbackSub.textContent = 'Too late — click within 600 ms on the green screen.';
+  if (stageCopy) {
+    stageCopy.innerHTML = `
+      <h3>Too late</h3>
+      <p>You were over the 600 ms limit.</p>
+    `;
+  }
+
+  if (gameButton) {
+    gameButton.textContent = 'Try again';
+    gameButton.classList.remove('hidden');
+  }
+
+  try {
+    if (currentUser) {
+      profile.failedAttempts = (profile.failedAttempts ?? 0) + 1;
+      await persistProfilePatch({ failedAttempts: profile.failedAttempts });
+      updateStats().catch(() => {});
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  window.setTimeout(() => {
+    if (phase === 'tooLate') {
       if (feedbackZone) feedbackZone.classList.remove('too-soon');
       resetGameStage();
     }
@@ -844,6 +1017,14 @@ function initializeEventListeners() {
 
       if (phase === 'go') {
         const timeMs = performance.now() - startTime;
+        if (timeMs > 600) {
+          tooLate(timeMs);
+          return;
+        }
+
+        stopAllGameSounds();
+        ensureGameSounds();
+        playSound(greenClickSound);
         finishRound(timeMs).catch(console.error);
       }
     });
@@ -904,6 +1085,7 @@ onAuthStateChanged(auth, async (user) => {
     profile = null;
     leaderboard = [];
     clearWaitTimer();
+    stopAllGameSounds();
     showView('auth');
     setStatus('Not signed in.');
 
