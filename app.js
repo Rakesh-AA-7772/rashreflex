@@ -22,7 +22,8 @@ import {
   limit,
   onSnapshot,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  increment
 } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
@@ -85,6 +86,8 @@ let phase = 'idle';
 let currentDifficulty = 'easy';
 let comboCount = 0;
 let sessionHighestCombo = 0;
+let dailyChallenge = null;
+let recentTimes = [];
 
 let waitingSound = null;
 let greenClickSound = null;
@@ -164,10 +167,283 @@ function ensureGameSounds() {
   failSound = failSound || createSound('fail.mp3', { volume: 0.85 });
 }
 
+function triggerFailFlash() {
+  const flash = document.getElementById('failFlash');
+  if (!flash) return;
+  flash.classList.remove('active');
+  void flash.offsetWidth;
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 600);
+}
+
+function triggerPBCeremony() {
+  const flash = document.getElementById('pbFlash');
+  if (flash) {
+    flash.classList.remove('active');
+    void flash.offsetWidth;
+    flash.classList.add('active');
+    setTimeout(() => flash.classList.remove('active'), 1000);
+  }
+  if (feedbackMain) {
+    feedbackMain.classList.add('pb-glow');
+    setTimeout(() => feedbackMain.classList.remove('pb-glow'), 1200);
+  }
+}
+
+function startFakeCue() {
+  if (!gameStage || phase !== 'waiting') return;
+  gameStage.classList.add('fake-cue');
+  setTimeout(() => gameStage.classList.remove('fake-cue'), 130);
+}
+
+const TOO_SOON_MESSAGES = [
+  'JUMPED THE GUN',
+  'TOO EAGER',
+  'NOT YET!',
+  'PATIENCE!',
+  'WAIT FOR GREEN',
+];
+
+function getTooLateMessage(timeMs) {
+  if (timeMs < 700) return { main: 'SO CLOSE', sub: `${Math.round(timeMs)}ms — only ${Math.round(timeMs - 600)}ms over. You were right there.` };
+  if (timeMs < 900) return { main: 'TOO SLOW', sub: `${Math.round(timeMs)}ms. The limit is 600ms. Close though.` };
+  if (timeMs < 1200) return { main: 'WAY TOO SLOW', sub: `${Math.round(timeMs)}ms? You can do better.` };
+  if (timeMs < 1800) return { main: 'ARE YOU ASLEEP?', sub: `${Math.round(timeMs)}ms. The limit is 600ms. Wake up.` };
+  return { main: 'HELLO?? 👋', sub: `${Math.round(timeMs)}ms. Anyone home?` };
+}
+
+const TIERS = [
+  { name: 'RASH ELITE ◆',    maxMs: 150,      color: '#ff00ff', glow: 'rgba(255,0,255,0.8)',    description: 'You are in the top 1% of all players.' },
+  { name: 'DIAMOND REFLEX',  maxMs: 200,      color: '#b9f2ff', glow: 'rgba(0,255,247,0.7)',    description: 'Elite reaction speed. Genuinely fast.' },
+  { name: 'PLATINUM STRIKE', maxMs: 250,      color: '#e5e4e2', glow: 'rgba(229,228,226,0.6)',  description: 'Among the fastest on the board.' },
+  { name: 'GOLD FLASH',      maxMs: 350,      color: '#FFD700', glow: 'rgba(255,215,0,0.7)',    description: 'Sharp and consistent. Above average.' },
+  { name: 'SILVER SNAP',     maxMs: 500,      color: '#C0C0C0', glow: 'rgba(192,192,192,0.5)',  description: 'Above average reflexes. Keep pushing.' },
+  { name: 'COPPER NERVE',    maxMs: 700,      color: '#cd7f32', glow: 'rgba(205,127,50,0.5)',   description: 'Getting there. Keep clicking.' },
+  { name: 'IRON REFLEX',     maxMs: Infinity, color: '#708090', glow: 'rgba(112,128,144,0.4)',  description: 'Everyone starts somewhere.' },
+];
+
+function getTier(bestTimeMs) {
+  if (typeof bestTimeMs !== 'number') return null;
+  return TIERS.find(t => bestTimeMs < t.maxMs) || TIERS[TIERS.length - 1];
+}
+
+function applyTierToElement(el, tier) {
+  if (!el) return;
+  if (!tier) { el.textContent = '—'; el.style.color = ''; el.style.textShadow = ''; return; }
+  el.textContent = tier.name;
+  el.style.color = tier.color;
+  el.style.textShadow = `0 0 15px ${tier.glow}`;
+}
+
+let tierPromotionTimer = null;
+
+function dismissTierPromotion() {
+  const overlay = document.getElementById('tierPromotion');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  setTimeout(() => overlay.classList.add('hidden'), 380);
+}
+
+function triggerTierPromotion(tier) {
+  const overlay = document.getElementById('tierPromotion');
+  const nameEl = document.getElementById('tierPromotionName');
+  const descEl = document.getElementById('tierPromotionDesc');
+  const threshEl = document.getElementById('tierPromotionThreshold');
+  if (!overlay || !nameEl || !descEl) return;
+
+  nameEl.textContent = tier.name;
+  nameEl.style.color = tier.color;
+  nameEl.style.textShadow = `0 0 30px ${tier.glow}, 0 0 60px ${tier.glow}`;
+  descEl.textContent = tier.description;
+
+  const nextTierIndex = TIERS.indexOf(tier) - 1;
+  if (threshEl) {
+    if (nextTierIndex >= 0) {
+      threshEl.textContent = `Next tier: ${TIERS[nextTierIndex].name} (sub-${TIERS[nextTierIndex].maxMs}ms)`;
+    } else {
+      threshEl.textContent = 'You have reached the highest tier.';
+    }
+  }
+
+  overlay.classList.remove('hidden');
+  void overlay.offsetWidth;
+  overlay.classList.add('active');
+
+  clearTimeout(tierPromotionTimer);
+  tierPromotionTimer = setTimeout(() => dismissTierPromotion(), 5000);
+}
+
+function checkAndTriggerTierPromotion(oldBestMs, newBestMs) {
+  const oldTier = getTier(oldBestMs);
+  const newTier = getTier(newBestMs);
+  if (!oldTier || !newTier) return;
+  if (oldTier.name !== newTier.name) {
+    setTimeout(() => triggerTierPromotion(newTier), 900);
+  }
+}
+
+function getTodayDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getDailyChallengeTarget(dateStr) {
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = (Math.imul(31, hash) + dateStr.charCodeAt(i)) | 0;
+  }
+  return 200 + Math.abs(hash) % 131;
+}
+
+async function loadDailyChallenge() {
+  const dateStr = getTodayDateStr();
+  const target = getDailyChallengeTarget(dateStr);
+  try {
+    const ref = doc(db, 'dailyChallenges', dateStr);
+    const snap = await getDoc(ref);
+    const completionCount = snap.exists() ? (snap.data().completionCount || 0) : 0;
+    dailyChallenge = { target, completionCount, dateStr };
+  } catch (e) {
+    dailyChallenge = { target, completionCount: 0, dateStr };
+  }
+  renderDailyChallengeCard();
+}
+
+function renderDailyChallengeCard() {
+  const card = document.getElementById('dailyChallengeCard');
+  if (!card || !dailyChallenge) return;
+
+  const alreadyCompleted = profile?.dailyChallengeDate === dailyChallenge.dateStr;
+  const targetEl = document.getElementById('dcTarget');
+  const completionsEl = document.getElementById('dcCompletions');
+  const statusEl = document.getElementById('dcStatus');
+
+  if (targetEl) targetEl.textContent = `sub-${dailyChallenge.target}ms`;
+  if (completionsEl) {
+    const n = dailyChallenge.completionCount;
+    completionsEl.textContent = `${n} player${n !== 1 ? 's' : ''} completed today`;
+  }
+  if (statusEl) {
+    statusEl.textContent = alreadyCompleted ? '✓ DONE' : 'ACTIVE';
+    statusEl.className = `dc-status ${alreadyCompleted ? 'dc-done' : 'dc-active'}`;
+  }
+
+  card.classList.remove('hidden');
+}
+
+function showDCToast() {
+  const toast = document.getElementById('dcToast');
+  if (!toast) return;
+  toast.classList.remove('hidden', 'dc-toast-out');
+  void toast.offsetWidth;
+  toast.classList.add('dc-toast-in');
+  setTimeout(() => {
+    toast.classList.remove('dc-toast-in');
+    toast.classList.add('dc-toast-out');
+    setTimeout(() => toast.classList.add('hidden'), 420);
+  }, 3500);
+}
+
+async function checkDailyChallengeCompletion(timeMs) {
+  if (!dailyChallenge || !currentUser || !profile?.nickname) return;
+  if (profile.dailyChallengeDate === dailyChallenge.dateStr) return;
+  if (timeMs >= dailyChallenge.target) return;
+
+  try {
+    const ref = doc(db, 'dailyChallenges', dailyChallenge.dateStr);
+    await setDoc(ref, {
+      completionCount: increment(1),
+      target: dailyChallenge.target,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    await persistProfilePatch({ dailyChallengeDate: dailyChallenge.dateStr });
+
+    const lbRef = doc(db, 'leaderboard', currentUser.uid);
+    await setDoc(lbRef, { dailyChallengeDate: dailyChallenge.dateStr }, { merge: true });
+
+    dailyChallenge.completionCount++;
+    renderDailyChallengeCard();
+    showDCToast();
+  } catch (e) {
+    console.error('Daily challenge update failed:', e);
+  }
+}
+
 function setStageState(state) {
   if (!gameStage) return;
   gameStage.classList.remove('idle', 'waiting', 'go');
   gameStage.classList.add(state);
+}
+
+function loadRecentTimes() {
+  if (!currentUser) return;
+  try {
+    const raw = localStorage.getItem(`rashreflex_recent_${currentUser.uid}`);
+    recentTimes = raw ? JSON.parse(raw).slice(-20) : [];
+  } catch { recentTimes = []; }
+  renderSparkline();
+}
+
+function pushRecentTime(timeMs) {
+  if (!currentUser) return;
+  recentTimes.push(timeMs);
+  if (recentTimes.length > 20) recentTimes = recentTimes.slice(-20);
+  try {
+    localStorage.setItem(`rashreflex_recent_${currentUser.uid}`, JSON.stringify(recentTimes));
+  } catch {}
+  renderSparkline();
+}
+
+function renderSparkline() {
+  const container = document.getElementById('sparklineContainer');
+  if (!container) return;
+
+  const times = recentTimes.filter(t => typeof t === 'number' && t > 0);
+  if (times.length < 2) {
+    container.innerHTML = '<p class="sparkline-empty">Play a few rounds to see your trend.</p>';
+    return;
+  }
+
+  const W = 300, H = 72, PAD = 10;
+  const minV = Math.min(...times);
+  const maxV = Math.max(...times);
+  const range = maxV - minV || 1;
+
+  const pts = times.map((t, i) => {
+    const x = PAD + (i / (times.length - 1)) * (W - PAD * 2);
+    const y = PAD + ((maxV - t) / range) * (H - PAD * 2);
+    return [x, y];
+  });
+
+  const n = times.length;
+  const half = Math.max(1, Math.floor(n / 2));
+  const avgFirst = times.slice(0, half).reduce((a, b) => a + b, 0) / half;
+  const avgLast = times.slice(half).reduce((a, b) => a + b, 0) / Math.max(1, n - half);
+  const improving = avgLast < avgFirst;
+  const lineColor = improving ? '#00ff41' : '#ff6b6b';
+  const polyline = pts.map(([x, y]) => `${x},${y}`).join(' ');
+  const last = pts[pts.length - 1];
+
+  container.innerHTML = `
+    <svg width="100%" viewBox="0 0 ${W} ${H}" class="sparkline-svg" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polyline points="${polyline} ${W - PAD},${H} ${PAD},${H}" fill="url(#sparkGrad)" stroke="none"/>
+      <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === pts.length - 1 ? '4' : '2'}" fill="${lineColor}" opacity="${i === pts.length - 1 ? '1' : '0.35'}"/>`).join('')}
+      <circle cx="${last[0]}" cy="${last[1]}" r="7" fill="none" stroke="${lineColor}" stroke-width="1.5" opacity="0.45"/>
+    </svg>
+    <div class="sparkline-footer">
+      <span class="sparkline-stat"><span class="sparkline-stat-label">Best</span>${formatMs(Math.min(...times))}</span>
+      <span class="sparkline-trend" style="color:${lineColor}">${improving ? '↓ Improving' : '↑ Slower'}</span>
+      <span class="sparkline-stat"><span class="sparkline-stat-label">Last</span>${formatMs(times[times.length - 1])}</span>
+    </div>
+  `;
 }
 
 function getDifficultyConfig(difficulty) {
@@ -183,22 +459,41 @@ function updateComboDisplay() {
   const comboElement = document.getElementById('comboValue');
   const comboDisplay = document.getElementById('comboDisplay');
   if (!comboElement || !comboDisplay) return;
-  
+
   comboElement.textContent = comboCount;
-  comboDisplay.classList.remove('combo-break', 'milestone');
-  
-  // Milestone animations every 5 combos
+  comboDisplay.classList.remove('combo-break', 'milestone', 'tier-5', 'tier-10', 'tier-20');
+
+  if (comboCount >= 20) {
+    comboDisplay.classList.add('tier-20');
+  } else if (comboCount >= 10) {
+    comboDisplay.classList.add('tier-10');
+  } else if (comboCount >= 5) {
+    comboDisplay.classList.add('tier-5');
+  }
+
   if (comboCount > 0 && comboCount % 5 === 0) {
     comboDisplay.classList.add('milestone');
+  }
+
+  if (gameStage) {
+    gameStage.classList.remove('combo-tier-5', 'combo-tier-10', 'combo-tier-20');
+    if (comboCount >= 20) gameStage.classList.add('combo-tier-20');
+    else if (comboCount >= 10) gameStage.classList.add('combo-tier-10');
+    else if (comboCount >= 5) gameStage.classList.add('combo-tier-5');
   }
 }
 
 function breakCombo() {
-  if (comboCount > 0) {
+  const previousCombo = comboCount;
+  if (previousCombo > 0) {
     const comboDisplay = document.getElementById('comboDisplay');
     if (comboDisplay) {
       comboDisplay.classList.add('combo-break');
       setTimeout(() => comboDisplay.classList.remove('combo-break'), 400);
+    }
+    if (previousCombo >= 10 && gameStage) {
+      gameStage.classList.add('combo-shatter');
+      setTimeout(() => gameStage.classList.remove('combo-shatter'), 500);
     }
   }
   comboCount = 0;
@@ -224,6 +519,8 @@ function showView(view) {
 function resetGameStage() {
   clearWaitTimer();
   stopAllGameSounds();
+  const _rpf = document.getElementById('pressureFill');
+  if (_rpf) { _rpf.style.transition = 'none'; _rpf.style.width = '0%'; }
   phase = 'idle';
   setStageState('idle');
 
@@ -380,7 +677,7 @@ function renderLeaderboard(rows) {
     li.innerHTML = `
       <div class="lb-left">
         <div class="rank ${rankClass}">${rankDisplay}</div>
-        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
+        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}${row.dailyChallengeDate === getTodayDateStr() ? ' <span class="lb-daily-badge" title="Completed today\'s challenge">⚡</span>' : ''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Best: </span>${formatMs(row.bestTimeMs)}</div>
@@ -409,7 +706,7 @@ function renderLeaderboardFullFromMemory() {
     li.innerHTML = `
       <div class="lb-left">
         <div class="rank ${rankClass}">${rankDisplay}</div>
-        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}</div>
+        <div class="nick" style="color:${nickColor};">${row.nickname || 'Anonymous'}${row.dailyChallengeDate === getTodayDateStr() ? ' <span class="lb-daily-badge" title="Completed today\'s challenge">⚡</span>' : ''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <div class="time"><span style="color:var(--muted);font-size:0.8rem;">Best: </span>${formatMs(row.bestTimeMs)}</div>
@@ -462,6 +759,8 @@ async function updateStats() {
   if (statsWorstTime) statsWorstTime.textContent = formatMs(lastTime);
   if (statsAttempts) statsAttempts.textContent = String(attempts);
 
+  applyTierToElement(document.getElementById('statsTier'), getTier(bestTime));
+
   if (typeof bestTime === 'number' && leaderboard.length) {
     const rank = leaderboard.findIndex((row) => row.id === currentUser.uid) + 1;
     if (statsRank) statsRank.textContent = rank > 0 ? `#${rank} of ${leaderboard.length}` : '—';
@@ -484,6 +783,8 @@ async function updateProfileView() {
   if (profileNickname) profileNickname.textContent = profile.nickname || '—';
   if (profileNickname && profile.nicknameColor) profileNickname.style.color = profile.nicknameColor;
   if (profileNicknameColorPreview) profileNicknameColorPreview.style.backgroundColor = profile.nicknameColor || '#E8B923';
+
+  applyTierToElement(document.getElementById('profileTier'), getTier(profile.bestTimeMs ?? null));
 
   if (navProfilePill) {
     navProfilePill.textContent = profile.nickname || currentUser.email || '—';
@@ -566,14 +867,32 @@ function startRound() {
     gameButton.classList.remove('hidden');
   }
 
-  // Get difficulty-based wait times
+  // Wait time scales down as combo grows (up to 45% faster at combo 20)
   const config = getDifficultyConfig(currentDifficulty);
-  const delay = Math.floor(config.waitMin + Math.random() * (config.waitMax - config.waitMin));
-  
+  const comboPressure = Math.min(comboCount, 20) / 20;
+  const pressureFactor = 1 - comboPressure * 0.45;
+  const scaledMin = Math.floor(config.waitMin * pressureFactor);
+  const scaledMax = Math.floor(config.waitMax * pressureFactor);
+  const delay = Math.floor(scaledMin + Math.random() * (scaledMax - scaledMin));
+
+  // Pressure fill bar — animates from 0→100% over the wait duration
+  const pressureFill = document.getElementById('pressureFill');
+  if (pressureFill) {
+    pressureFill.style.transition = 'none';
+    pressureFill.style.width = '0%';
+    void pressureFill.offsetWidth;
+    pressureFill.style.transition = `width ${delay}ms linear`;
+    pressureFill.style.width = '100%';
+  }
+
   waitTimer = window.setTimeout(() => {
     phase = 'go';
     startTime = performance.now();
     setStageState('go');
+
+    // Clear pressure bar on green
+    const pf = document.getElementById('pressureFill');
+    if (pf) { pf.style.transition = 'none'; pf.style.width = '0%'; }
 
     if (stageCopy) {
       stageCopy.innerHTML = `
@@ -586,6 +905,13 @@ function startRound() {
       gameButton.textContent = 'Click!';
     }
   }, delay);
+
+  // Fake cue probability escalates with combo (15% → 40%)
+  const fakeCueChance = comboCount >= 20 ? 0.40 : comboCount >= 10 ? 0.30 : comboCount >= 5 ? 0.22 : 0.15;
+  if (Math.random() < fakeCueChance) {
+    const fakeAt = Math.floor(delay * (0.35 + Math.random() * 0.3));
+    setTimeout(() => startFakeCue(), fakeAt);
+  }
 }
 
 async function finishRound(timeMs) {
@@ -594,7 +920,9 @@ async function finishRound(timeMs) {
   phase = 'result';
   setStageState('idle');
 
-  // Increment combo on successful click
+  const prevBestMs = typeof profile?.bestTimeMs === 'number' ? profile.bestTimeMs : null;
+  const isPB = prevBestMs !== null && timeMs < prevBestMs;
+
   comboCount++;
   if (comboCount > sessionHighestCombo) {
     sessionHighestCombo = comboCount;
@@ -606,10 +934,7 @@ async function finishRound(timeMs) {
 
   if (feedbackZone) {
     feedbackZone.classList.remove('hidden');
-    feedbackZone.classList.toggle(
-      'record-break',
-      typeof profile?.bestTimeMs === 'number' && timeMs < profile.bestTimeMs
-    );
+    feedbackZone.classList.toggle('record-break', isPB);
   }
 
   if (feedbackMain) feedbackMain.textContent = formatMs(timeMs);
@@ -619,9 +944,17 @@ async function finishRound(timeMs) {
 
   playSound(greenClickSound);
 
+  if (isPB) {
+    triggerPBCeremony();
+    checkAndTriggerTierPromotion(prevBestMs, timeMs);
+  }
+
   try {
     await saveResult(timeMs);
     updateStats().catch(() => {});
+    checkDailyChallengeCompletion(timeMs).catch(() => {});
+    pushRecentTime(timeMs);
+    if (navigator.vibrate) navigator.vibrate(40);
   } catch (error) {
     console.error(error);
     setStatus('Saved locally, but the score could not be stored yet.');
@@ -636,27 +969,27 @@ async function tooSoon() {
 
   playSound(failSound);
 
-  // Break combo
   breakCombo();
+  triggerFailFlash();
 
-  // DRAMATIC FAILURE EFFECTS
   if (gameStage) {
-    gameStage.classList.add('stage-fail');
-    // Remove animation class after animation ends
-    setTimeout(() => {
-      gameStage.classList.remove('stage-fail');
-    }, 800);
+    gameStage.classList.add('stage-fail', 'stage-glitch');
+    setTimeout(() => gameStage.classList.remove('stage-fail', 'stage-glitch'), 800);
   }
+  const _pf = document.getElementById('pressureFill');
+  if (_pf) { _pf.style.transition = 'none'; _pf.style.width = '0%'; }
 
-  // Show "TOO SLOW" indicator
+  const tooSoonMsg = TOO_SOON_MESSAGES[Math.floor(Math.random() * TOO_SOON_MESSAGES.length)];
+
   if (tooSlowIndicator) {
+    tooSlowIndicator.textContent = tooSoonMsg;
     tooSlowIndicator.classList.remove('hidden');
     setTimeout(() => {
+      tooSlowIndicator.textContent = 'TOO SLOW';
       tooSlowIndicator.classList.add('hidden');
-    }, 600);
+    }, 700);
   }
 
-  // Trigger vibration on mobile
   if (navigator.vibrate) {
     navigator.vibrate([100, 50, 100, 50, 200]);
   }
@@ -665,6 +998,14 @@ async function tooSoon() {
     feedbackZone.classList.remove('hidden');
     feedbackZone.classList.add('too-soon');
   }
+
+  if (feedbackMain) {
+    feedbackMain.textContent = tooSoonMsg;
+    feedbackMain.classList.add('too-soon-text');
+    setTimeout(() => feedbackMain.classList.remove('too-soon-text'), 800);
+  }
+
+  if (feedbackSub) feedbackSub.textContent = 'You clicked during red. Wait for the screen to turn green.';
 
   if (stageCopy) {
     stageCopy.innerHTML = `
@@ -705,21 +1046,24 @@ async function tooLate(timeMs) {
   playSound(failSound);
 
   breakCombo();
+  triggerFailFlash();
 
   if (gameStage) {
-    gameStage.classList.add('stage-fail');
-    setTimeout(() => {
-      gameStage.classList.remove('stage-fail');
-    }, 800);
+    gameStage.classList.add('stage-fail', 'stage-glitch');
+    setTimeout(() => gameStage.classList.remove('stage-fail', 'stage-glitch'), 800);
   }
+  const _pf = document.getElementById('pressureFill');
+  if (_pf) { _pf.style.transition = 'none'; _pf.style.width = '0%'; }
+
+  const lateMsg = getTooLateMessage(timeMs);
 
   if (tooSlowIndicator) {
-    tooSlowIndicator.textContent = 'TOO LATE';
+    tooSlowIndicator.textContent = lateMsg.main;
     tooSlowIndicator.classList.remove('hidden');
     setTimeout(() => {
       tooSlowIndicator.textContent = 'TOO SLOW';
       tooSlowIndicator.classList.add('hidden');
-    }, 600);
+    }, 700);
   }
 
   if (navigator.vibrate) {
@@ -731,8 +1075,8 @@ async function tooLate(timeMs) {
     feedbackZone.classList.add('too-soon');
   }
 
-  if (feedbackMain) feedbackMain.textContent = formatMs(timeMs);
-  if (feedbackSub) feedbackSub.textContent = 'Too late — click within 600 ms on the green screen.';
+  if (feedbackMain) feedbackMain.textContent = lateMsg.main;
+  if (feedbackSub) feedbackSub.textContent = lateMsg.sub;
   if (stageCopy) {
     stageCopy.innerHTML = `
       <h3>Too late</h3>
@@ -769,6 +1113,8 @@ async function enterApp() {
   await updateStats();
   await updateProfileView();
   resetGameStage();
+  loadRecentTimes();
+  loadDailyChallenge().catch(() => {});
 }
 
 async function routeAfterLogin(user) {
@@ -800,8 +1146,13 @@ function safeErrorMessage(error) {
 }
 
 function initializeEventListeners() {
+  const tierPromotionClose = document.getElementById('tierPromotionClose');
+  if (tierPromotionClose) {
+    tierPromotionClose.addEventListener('click', dismissTierPromotion);
+  }
+
   const navBrandClick = $('navBrandClick');
-  
+
   // Logo click in game navbar goes to PLAY (not about)
   if (navBrandClick) {
     navBrandClick.addEventListener('click', (e) => {
@@ -866,6 +1217,8 @@ function initializeEventListeners() {
         if (statsAttempts) statsAttempts.textContent = '0';
         if (statsAvgTime) statsAvgTime.textContent = '—';
         if (statsRank) statsRank.textContent = '—';
+        applyTierToElement(document.getElementById('statsTier'), null);
+        applyTierToElement(document.getElementById('profileTier'), null);
         
         // Clear leaderboard and re-listen
         leaderboard = [];
