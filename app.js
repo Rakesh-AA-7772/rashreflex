@@ -1,4 +1,4 @@
-cp /dev/stdin /mnt/user-data/outputs/app.js << 'ENDOFFILE'
+
 
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
@@ -1449,5 +1449,3 @@ onAuthStateChanged(auth, async (user) => {
 resetGameStage();
 showView('auth');
 setStatus('Enter a nickname to begin.');
-ENDOFFILE
-echo "done"
