@@ -979,6 +979,545 @@ input:focus {
   filter: brightness(1.2);
 }
 
+/* ============================================
+   FULL-SCREEN FLASH OVERLAYS
+   ============================================ */
+.fail-flash-overlay,
+.pb-flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+}
+
+.fail-flash-overlay.active {
+  animation: fullScreenRedFlash 0.55s ease-out forwards;
+}
+
+.pb-flash-overlay.active {
+  animation: fullScreenGoldFlash 0.9s ease-out forwards;
+}
+
+@keyframes fullScreenRedFlash {
+  0%   { background: rgba(255, 0, 0, 0.72); opacity: 1; }
+  40%  { background: rgba(200, 0, 0, 0.45); opacity: 0.8; }
+  100% { background: rgba(255, 0, 0, 0);    opacity: 0; }
+}
+
+@keyframes fullScreenGoldFlash {
+  0%   { background: rgba(255, 215, 0, 0.55); opacity: 1; }
+  50%  { background: rgba(255, 215, 0, 0.3);  opacity: 0.7; }
+  100% { background: rgba(255, 215, 0, 0);    opacity: 0; }
+}
+
+/* ============================================
+   WAIT PHASE BREATHING TENSION
+   ============================================ */
+.game-stage.waiting {
+  animation: waitBreath 1.4s ease-in-out infinite;
+}
+
+@keyframes waitBreath {
+  0%, 100% { box-shadow: 0 0 60px rgba(255, 0, 0, 0.6); }
+  50%       { box-shadow: 0 0 130px rgba(255, 0, 0, 1.0), inset 0 0 60px rgba(255, 0, 0, 0.35); }
+}
+
+/* ============================================
+   FAKE CUE FLICKER
+   ============================================ */
+.game-stage.fake-cue {
+  background: #FFC400 !important;
+  box-shadow: 0 0 80px rgba(255, 196, 0, 0.9) !important;
+  transition: background 0.04s ease !important;
+}
+
+/* ============================================
+   TOO SLOW INDICATOR — SLAM IN
+   ============================================ */
+.too-slow-indicator:not(.hidden) {
+  animation: slamIn 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94), glitchFlicker 0.55s ease-out 0.28s;
+}
+
+@keyframes slamIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
+  65%  { transform: translate(-50%, -50%) scale(0.93); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+
+/* ============================================
+   PERSONAL BEST — FEEDBACK GLOW
+   ============================================ */
+.feedback-main.pb-glow {
+  animation: pbGlow 1.2s ease-out;
+  color: #FFD700 !important;
+}
+
+@keyframes pbGlow {
+  0%   { text-shadow: 0 0 0px rgba(255, 215, 0, 0);   transform: scale(1); }
+  30%  { text-shadow: 0 0 40px rgba(255, 215, 0, 1), 0 0 80px rgba(255, 215, 0, 0.5); transform: scale(1.14); }
+  100% { text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); transform: scale(1); }
+}
+
+/* ============================================
+   TOO SOON TEXT ON FEEDBACK MAIN
+   ============================================ */
+.feedback-main.too-soon-text {
+  color: #ff3333 !important;
+  text-shadow: 0 0 20px rgba(255, 51, 51, 0.8) !important;
+  animation: glitchFlicker 0.6s ease-out;
+}
+
+/* ============================================
+   COMBO DISPLAY TIER STATES
+   ============================================ */
+.combo-display.tier-5 {
+  background: rgba(0, 255, 247, 0.12);
+  border-color: rgba(0, 255, 247, 0.55);
+}
+
+.combo-display.tier-5 .combo-value {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 15px rgba(0, 255, 247, 0.8);
+}
+
+.combo-display.tier-10 {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: rgba(0, 255, 65, 0.75);
+  animation: comboGlow10 1s ease-in-out infinite;
+}
+
+.combo-display.tier-10 .combo-value {
+  color: var(--neon-lime);
+  text-shadow: 0 0 20px rgba(0, 255, 65, 1), 0 0 40px rgba(0, 255, 65, 0.5);
+}
+
+@keyframes comboGlow10 {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 255, 65, 0.3); }
+  50%       { box-shadow: 0 0 28px rgba(0, 255, 65, 0.7), 0 0 55px rgba(0, 255, 65, 0.3); }
+}
+
+.combo-display.tier-20 {
+  background: rgba(255, 0, 255, 0.14);
+  border-color: rgba(255, 0, 255, 0.8);
+  animation: comboGlow20 0.7s ease-in-out infinite;
+}
+
+.combo-display.tier-20 .combo-value {
+  color: var(--neon-pink);
+  text-shadow: 0 0 20px rgba(255, 0, 255, 1), 0 0 40px rgba(255, 0, 255, 0.6);
+  animation: comboRainbow 1.5s linear infinite;
+}
+
+@keyframes comboGlow20 {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 255, 0.4), 0 0 40px rgba(119, 0, 255, 0.3); }
+  50%       { box-shadow: 0 0 40px rgba(255, 0, 255, 0.8), 0 0 80px rgba(119, 0, 255, 0.5); }
+}
+
+@keyframes comboRainbow {
+  0%   { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* ============================================
+   COMBO TIER GAME STAGE STATES (idle)
+   ============================================ */
+.game-stage.idle.combo-tier-5 {
+  border: 2px solid rgba(0, 255, 247, 0.35) !important;
+  box-shadow: 0 0 30px rgba(0, 255, 247, 0.12) !important;
+}
+
+.game-stage.idle.combo-tier-10 {
+  border: 2px solid rgba(0, 255, 65, 0.55) !important;
+  box-shadow: 0 0 50px rgba(0, 255, 65, 0.18) !important;
+}
+
+.game-stage.idle.combo-tier-20 {
+  border: 2px solid rgba(255, 0, 255, 0.65) !important;
+  box-shadow: 0 0 60px rgba(255, 0, 255, 0.25), 0 0 30px rgba(119, 0, 255, 0.2) !important;
+  animation: comboHighFilter 3s ease-in-out infinite;
+}
+
+@keyframes comboHighFilter {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50%       { filter: hue-rotate(14deg) brightness(1.04); }
+}
+
+/* ============================================
+   HIGH COMBO SHATTER ON BREAK
+   ============================================ */
+.game-stage.combo-shatter {
+  animation: comboShatter 0.5s ease-out !important;
+}
+
+@keyframes comboShatter {
+  0%   { filter: brightness(3.5) saturate(0); transform: scale(1); }
+  20%  { filter: brightness(1) saturate(2) hue-rotate(200deg); transform: scale(1.01); }
+  65%  { filter: brightness(0.85) saturate(1.2); transform: scale(0.99); }
+  100% { filter: brightness(1) saturate(1); transform: scale(1); }
+}
+
+/* ============================================
+   CROSSHAIR CURSOR
+   ============================================ */
+#gameStage,
+#gameButton,
+.stage-button {
+  cursor: crosshair;
+}
+
+/* ============================================
+   PRESSURE BUILD BAR
+   ============================================ */
+.pressure-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pressure-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(255, 60, 60, 0.7), rgba(255, 200, 0, 0.9));
+  border-radius: inherit;
+  transition: none;
+}
+
+/* ============================================
+   STAGE GLITCH ON FAILURE
+   ============================================ */
+@keyframes stageGlitch {
+  0%   { transform: translate(0, 0) skewX(0deg);   filter: none; }
+  12%  { transform: translate(-5px, 2px) skewX(-5deg); filter: hue-rotate(80deg) brightness(1.4); }
+  28%  { transform: translate(5px, -3px) skewX(4deg);  filter: hue-rotate(-50deg) saturate(2.2); }
+  44%  { transform: translate(-3px, 1px) skewX(-2deg); filter: brightness(0.7); }
+  60%  { transform: translate(3px, -1px) skewX(2deg);  filter: hue-rotate(30deg); }
+  78%  { transform: translate(-1px, 0) skewX(0);   filter: brightness(1.1); }
+  100% { transform: translate(0, 0);               filter: none; }
+}
+
+.game-stage.stage-glitch {
+  animation: stageGlitch 0.6s ease both;
+}
+
+/* ============================================
+   COMBO URGENCY MICRO-ANIMATIONS
+   ============================================ */
+@keyframes urgentPulse {
+  0%, 100% { box-shadow: var(--stage-shadow, none), inset 0 0 0 0 transparent; }
+  50%       { box-shadow: var(--stage-shadow, none), inset 0 0 30px 6px rgba(255, 100, 0, 0.16); }
+}
+
+@keyframes franticPulse {
+  0%   { box-shadow: var(--stage-shadow, none), inset 0 0 0 0 transparent; }
+  33%  { box-shadow: var(--stage-shadow, none), inset 0 0 40px 10px rgba(255, 0, 200, 0.2); }
+  66%  { box-shadow: var(--stage-shadow, none), inset 0 0 20px 4px rgba(255, 100, 0, 0.18); }
+  100% { box-shadow: var(--stage-shadow, none), inset 0 0 0 0 transparent; }
+}
+
+.game-stage.combo-tier-10.waiting { animation: urgentPulse 0.85s ease-in-out infinite; }
+.game-stage.combo-tier-20.waiting { animation: franticPulse 0.48s ease-in-out infinite; }
+
+/* ============================================
+   SPARKLINE CHART
+   ============================================ */
+.sparkline-card {
+  margin-top: 16px;
+  padding: 18px 20px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.sparkline-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.sparkline-container { width: 100%; }
+
+.sparkline-svg {
+  display: block;
+  width: 100%;
+  height: 72px;
+}
+
+.sparkline-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 0;
+  margin: 0;
+}
+
+.sparkline-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.sparkline-stat {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+}
+
+.sparkline-stat-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.sparkline-trend {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================
+   DAILY CHALLENGE CARD
+   ============================================ */
+.daily-challenge-card {
+  margin: 16px 20px 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 215, 0, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.18);
+  width: calc(100% - 40px);
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.daily-challenge-card:has(.dc-done) {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
+.dc-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.dc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dc-eyebrow {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(255, 215, 0, 0.55);
+  text-transform: uppercase;
+}
+
+.dc-target {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.dc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.dc-completions {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.dc-status {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 3px 9px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.dc-active {
+  color: #00ff41;
+  background: rgba(0, 255, 65, 0.1);
+  border: 1px solid rgba(0, 255, 65, 0.28);
+}
+
+.dc-done {
+  color: #FFD700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+}
+
+/* ============================================
+   DAILY CHALLENGE TOAST
+   ============================================ */
+.dc-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(90px);
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #111;
+  font-weight: 800;
+  font-size: 0.96rem;
+  padding: 14px 24px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9998;
+  box-shadow: 0 8px 32px rgba(255, 215, 0, 0.45);
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.38s ease;
+}
+
+.dc-toast.hidden { display: none !important; }
+
+.dc-toast.dc-toast-in {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.dc-toast.dc-toast-out {
+  transform: translateX(-50%) translateY(90px);
+  opacity: 0;
+  transition: transform 0.32s ease, opacity 0.32s ease;
+}
+
+.dc-toast-icon { font-size: 1.2rem; }
+
+/* ============================================
+   LEADERBOARD DAILY BADGE
+   ============================================ */
+.lb-daily-badge {
+  font-size: 0.85em;
+  vertical-align: middle;
+  filter: drop-shadow(0 0 4px rgba(255,215,0,0.6));
+}
+
+/* ============================================
+   TIER PROMOTION OVERLAY
+   ============================================ */
+.tier-promotion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s ease;
+}
+
+.tier-promotion-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tier-promotion-overlay.hidden {
+  display: none !important;
+}
+
+.tier-promotion-card {
+  text-align: center;
+  padding: 52px 44px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  max-width: 460px;
+  width: calc(100% - 48px);
+  position: relative;
+}
+
+.tier-promotion-overlay.active .tier-promotion-card {
+  animation: tierCardIn 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes tierCardIn {
+  0%   { opacity: 0; transform: scale(0.6) translateY(28px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.tier-promotion-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.tier-promo-badge {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  animation: tierNamePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tierNamePulse {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(1.3) drop-shadow(0 0 12px currentColor); }
+}
+
+.tier-promo-desc {
+  color: var(--muted);
+  font-size: 1rem;
+  margin-bottom: 12px;
+  line-height: 1.55;
+}
+
+.tier-promo-threshold {
+  color: rgba(255,255,255,0.35);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-bottom: 32px;
+  text-transform: uppercase;
+}
+
+.tier-promo-close {
+  padding: 14px 40px;
+  font-size: 1rem;
+}
+
+/* ============================================
+   STATS TIER CARD
+   ============================================ */
+.stats-tier-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.03);
+}
+
+.stats-tier-card .stats-value {
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
 @media (max-width: 940px) {
   .game-layout { grid-template-columns: 1fr; }
 }
