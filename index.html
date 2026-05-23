@@ -94,6 +94,10 @@
           <div class="too-slow-indicator hidden" id="tooSlowIndicator">TOO SLOW</div>
         </div>
 
+        <div class="pressure-bar">
+          <div class="pressure-fill" id="pressureFill"></div>
+        </div>
+
         <div class="feedback-zone hidden" id="feedbackZone">
           <div class="feedback-main" id="feedbackMain">—</div>
           <div class="feedback-sub" id="feedbackSub">—</div>
@@ -108,6 +112,19 @@
           <div>
             <span class="result-label">Best run</span>
             <strong id="bestResult">—</strong>
+          </div>
+        </div>
+
+        <div id="dailyChallengeCard" class="daily-challenge-card hidden">
+          <div class="dc-inner">
+            <div class="dc-left">
+              <span class="dc-eyebrow">Daily Challenge</span>
+              <span class="dc-target" id="dcTarget">—</span>
+            </div>
+            <div class="dc-right">
+              <span id="dcCompletions" class="dc-completions">—</span>
+              <span id="dcStatus" class="dc-status dc-active">ACTIVE</span>
+            </div>
           </div>
         </div>
       </div>
@@ -149,7 +166,18 @@
           <span class="stats-label">Your Rank</span>
           <strong class="stats-value" id="statsRank">—</strong>
         </div>
+        <div class="stats-card stats-tier-card">
+          <span class="stats-label">Tier</span>
+          <strong class="stats-value" id="statsTier">—</strong>
+        </div>
       </div>
+      <div class="sparkline-card" id="sparklineCard">
+        <span class="sparkline-card-label">Recent Rounds</span>
+        <div id="sparklineContainer" class="sparkline-container">
+          <p class="sparkline-empty">Play a few rounds to see your trend.</p>
+        </div>
+      </div>
+
       <button class="primary-btn reset-stats-btn" id="resetStatsBtn" type="button">Reset Stats</button>
     </section>
 
@@ -166,6 +194,10 @@
               <strong id="profileNickname">—</strong>
               <div id="profileNicknameColorPreview" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);"></div>
             </div>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Rank Tier</span>
+            <strong id="profileTier" style="font-size:1.1rem;">—</strong>
           </div>
         </div>
       </div>
@@ -239,6 +271,24 @@
   <footer class="app-footer">
     <p class="footer-credit">Made by Rakesh <a href="https://discord.com/users/1276957718636265556" target="_blank" rel="noopener noreferrer" class="discord-link">Discord↗</a></p>
   </footer>
+
+  <div id="dcToast" class="dc-toast hidden">
+    <span class="dc-toast-icon">⚡</span>
+    <span class="dc-toast-text">Daily Challenge Complete!</span>
+  </div>
+
+  <div id="failFlash" class="fail-flash-overlay"></div>
+  <div id="pbFlash" class="pb-flash-overlay"></div>
+
+  <div id="tierPromotion" class="tier-promotion-overlay hidden">
+    <div class="tier-promotion-card">
+      <div class="tier-promotion-eyebrow">RANK UP</div>
+      <div class="tier-promo-badge" id="tierPromotionName">GOLD FLASH</div>
+      <div class="tier-promo-desc" id="tierPromotionDesc">Sharp and consistent.</div>
+      <div class="tier-promo-threshold" id="tierPromotionThreshold"></div>
+      <button class="primary-btn tier-promo-close" id="tierPromotionClose" type="button">Continue</button>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>
