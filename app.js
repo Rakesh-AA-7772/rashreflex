@@ -1,3 +1,4 @@
+cp /dev/stdin /mnt/user-data/outputs/app.js << 'ENDOFFILE'
 
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
@@ -213,7 +214,7 @@ function getTooLateMessage(timeMs) {
 }
 
 const TIERS = [
-  { name: 'RASH ELITE ◆',    maxMs: 150,      color: '#ff00ff', glow: 'rgba(255,0,255,0.8)',    description: 'You are in the top 1% of all players.' },
+  { name: 'RASH ELITE',      maxMs: 150,      color: '#ff00ff', glow: 'rgba(255,0,255,0.8)',    description: 'You are in the top 1% of all players.' },
   { name: 'DIAMOND REFLEX',  maxMs: 200,      color: '#b9f2ff', glow: 'rgba(0,255,247,0.7)',    description: 'Elite reaction speed. Genuinely fast.' },
   { name: 'PLATINUM STRIKE', maxMs: 250,      color: '#e5e4e2', glow: 'rgba(229,228,226,0.6)',  description: 'Among the fastest on the board.' },
   { name: 'GOLD FLASH',      maxMs: 350,      color: '#FFD700', glow: 'rgba(255,215,0,0.7)',    description: 'Sharp and consistent. Above average.' },
@@ -529,6 +530,10 @@ function resetGameStage() {
     feedbackZone.classList.remove('record-break', 'too-soon');
   }
 
+  // Remove share row when resetting
+  const shareRow = document.getElementById('shareRow');
+  if (shareRow) shareRow.remove();
+
   if (stageCopy) {
     stageCopy.innerHTML = `
       <h3>Click to get started</h3>
@@ -735,9 +740,6 @@ function listenLeaderboard() {
     },
     (error) => {
       console.error(error);
-      if (leaderNick) leaderNick.textContent = 'Unavailable';
-      if (leaderTime) leaderTime.textContent = '—';
-      if (leaderboardList) leaderboardList.innerHTML = '<li style="justify-content:center;color:var(--muted);">Leaderboard unavailable right now.</li>';
       if (leaderboardListFull) leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">Leaderboard unavailable right now.</li>';
     }
   );
@@ -753,7 +755,6 @@ async function updateStats() {
   const bestTime = data?.bestTimeMs ?? profile.bestTimeMs ?? null;
   const lastTime = data?.lastTimeMs ?? profile.lastTimeMs ?? null;
   const attempts = data?.attempts ?? profile.attempts ?? 0;
-  const failedAttempts = profile.failedAttempts ?? 0;
 
   if (statsBestTime) statsBestTime.textContent = formatMs(bestTime);
   if (statsWorstTime) statsWorstTime.textContent = formatMs(lastTime);
@@ -818,6 +819,86 @@ function getRecordMessage(timeMs, bestTime) {
   return `Your best remains ${formatMs(bestTime)}.`;
 }
 
+// ============================================================
+// SHARE BUTTON
+// Shows Twitter/X, WhatsApp, and Copy buttons after each round.
+// Each player who shares spreads the link automatically.
+// ============================================================
+function buildShareText(timeMs, tierName) {
+  const nick = profile?.nickname || 'I';
+  return `${nick} got ${Math.round(timeMs)}ms on Rash Reflex (${tierName}) ⚡ Can you beat me? rashreflex.vercel.app`;
+}
+
+function showShareButtons(timeMs) {
+  const existing = document.getElementById('shareRow');
+  if (existing) existing.remove();
+
+  const tier = getTier(timeMs);
+  const tierName = tier ? tier.name : 'IRON REFLEX';
+  const shareText = buildShareText(timeMs, tierName);
+  const encodedText = encodeURIComponent(shareText);
+
+  const row = document.createElement('div');
+  row.id = 'shareRow';
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;';
+
+  const btnBase = 'display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-size:0.8rem;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-decoration:none;transition:opacity 0.15s;';
+
+  // Twitter/X
+  const twitterBtn = document.createElement('a');
+  twitterBtn.href = `https://twitter.com/intent/tweet?text=${encodedText}`;
+  twitterBtn.target = '_blank';
+  twitterBtn.rel = 'noopener noreferrer';
+  twitterBtn.style.cssText = btnBase + 'background:#000;color:#fff;';
+  twitterBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Share on X';
+
+  // WhatsApp
+  const waBtn = document.createElement('a');
+  waBtn.href = `https://wa.me/?text=${encodedText}`;
+  waBtn.target = '_blank';
+  waBtn.rel = 'noopener noreferrer';
+  waBtn.style.cssText = btnBase + 'background:#25D366;color:#fff;';
+  waBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WhatsApp';
+
+  // Copy
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.style.cssText = btnBase + 'background:rgba(255,255,255,0.1);color:#e8edf5;border:1px solid rgba(255,255,255,0.15);';
+  copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = shareText;
+      ta.style.cssText = 'position:fixed;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    copyBtn.style.background = 'rgba(0,255,65,0.15)';
+    copyBtn.style.color = '#00ff41';
+    setTimeout(() => {
+      copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+      copyBtn.style.background = 'rgba(255,255,255,0.1)';
+      copyBtn.style.color = '#e8edf5';
+    }, 2000);
+  });
+
+  row.appendChild(twitterBtn);
+  row.appendChild(waBtn);
+  row.appendChild(copyBtn);
+
+  if (feedbackAgainBtn && feedbackAgainBtn.parentNode) {
+    feedbackAgainBtn.parentNode.insertBefore(row, feedbackAgainBtn.nextSibling);
+  } else if (feedbackZone) {
+    feedbackZone.appendChild(row);
+  }
+}
+
 async function saveResult(timeMs) {
   if (!currentUser || !profile?.nickname) return;
 
@@ -829,12 +910,7 @@ async function saveResult(timeMs) {
   profile.lastTimeMs = timeMs;
   profile.attempts = attempts;
 
-  await persistProfilePatch({
-    bestTimeMs,
-    lastTimeMs: timeMs,
-    attempts
-  });
-
+  await persistProfilePatch({ bestTimeMs, lastTimeMs: timeMs, attempts });
   await syncLeaderboardDoc(timeMs, 'score');
 
   if (lastResult) lastResult.textContent = formatMs(timeMs);
@@ -867,7 +943,6 @@ function startRound() {
     gameButton.classList.remove('hidden');
   }
 
-  // Wait time scales down as combo grows (up to 45% faster at combo 20)
   const config = getDifficultyConfig(currentDifficulty);
   const comboPressure = Math.min(comboCount, 20) / 20;
   const pressureFactor = 1 - comboPressure * 0.45;
@@ -875,7 +950,6 @@ function startRound() {
   const scaledMax = Math.floor(config.waitMax * pressureFactor);
   const delay = Math.floor(scaledMin + Math.random() * (scaledMax - scaledMin));
 
-  // Pressure fill bar — animates from 0→100% over the wait duration
   const pressureFill = document.getElementById('pressureFill');
   if (pressureFill) {
     pressureFill.style.transition = 'none';
@@ -890,7 +964,6 @@ function startRound() {
     startTime = performance.now();
     setStageState('go');
 
-    // Clear pressure bar on green
     const pf = document.getElementById('pressureFill');
     if (pf) { pf.style.transition = 'none'; pf.style.width = '0%'; }
 
@@ -906,7 +979,6 @@ function startRound() {
     }
   }, delay);
 
-  // Fake cue probability escalates with combo (15% → 40%)
   const fakeCueChance = comboCount >= 20 ? 0.40 : comboCount >= 10 ? 0.30 : comboCount >= 5 ? 0.22 : 0.15;
   if (Math.random() < fakeCueChance) {
     const fakeAt = Math.floor(delay * (0.35 + Math.random() * 0.3));
@@ -924,9 +996,7 @@ async function finishRound(timeMs) {
   const isPB = prevBestMs !== null && timeMs < prevBestMs;
 
   comboCount++;
-  if (comboCount > sessionHighestCombo) {
-    sessionHighestCombo = comboCount;
-  }
+  if (comboCount > sessionHighestCombo) sessionHighestCombo = comboCount;
   updateComboDisplay();
 
   const feedback = getFeedbackMessage(timeMs);
@@ -941,6 +1011,9 @@ async function finishRound(timeMs) {
   if (feedbackSub) feedbackSub.textContent = `${feedback.main}. ${recordText}`;
   if (stageCopy) stageCopy.innerHTML = '';
   if (gameButton) gameButton.classList.add('hidden');
+
+  // Show share buttons after every successful round
+  showShareButtons(timeMs);
 
   playSound(greenClickSound);
 
@@ -968,7 +1041,6 @@ async function tooSoon() {
   phase = 'tooSoon';
 
   playSound(failSound);
-
   breakCombo();
   triggerFailFlash();
 
@@ -990,9 +1062,7 @@ async function tooSoon() {
     }, 700);
   }
 
-  if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100, 50, 200]);
-  }
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
 
   if (feedbackZone) {
     feedbackZone.classList.remove('hidden');
@@ -1044,7 +1114,6 @@ async function tooLate(timeMs) {
   phase = 'tooLate';
 
   playSound(failSound);
-
   breakCombo();
   triggerFailFlash();
 
@@ -1066,9 +1135,7 @@ async function tooLate(timeMs) {
     }, 700);
   }
 
-  if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100, 50, 200]);
-  }
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
 
   if (feedbackZone) {
     feedbackZone.classList.remove('hidden');
@@ -1131,7 +1198,6 @@ async function routeAfterLogin(user) {
     return;
   }
 
-  // User has a nickname, automatically enter the app
   await enterApp();
 }
 
@@ -1152,55 +1218,43 @@ function initializeEventListeners() {
   }
 
   const navBrandClick = $('navBrandClick');
-
-  // Logo click in game navbar goes to PLAY (not about)
   if (navBrandClick) {
     navBrandClick.addEventListener('click', (e) => {
       e.preventDefault();
-      if (currentView === 'play') return; // Already on play
+      if (currentView === 'play') return;
       showView('play');
     });
   }
-  
-  // Color button selection in auth
+
   const colorBtns = document.querySelectorAll('.color-btn');
   if (colorBtns.length > 0) {
     colorBtns.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const color = btn.dataset.color;
-        
-        // Update hidden input
         const colorInput = $('nicknameColor');
         if (colorInput) colorInput.value = color;
-        
-        // Update active state
         colorBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
       });
     });
-    
-    // Set initial active state to first button
     if (colorBtns[0]) colorBtns[0].classList.add('active');
   }
-  
-  // Reset stats button
+
   const resetStatsBtn = $('resetStatsBtn');
   if (resetStatsBtn) {
     resetStatsBtn.addEventListener('click', async () => {
       if (!currentUser) return;
-      
+
       const confirm = window.confirm('Are you sure? This will delete all your stats and remove you from the leaderboard.');
       if (!confirm) return;
-      
+
       try {
         setStatus('Resetting your stats...');
-        
-        // Delete from leaderboard
+
         const leaderboardRef = doc(db, 'leaderboard', currentUser.uid);
         await deleteDoc(leaderboardRef);
-        
-        // Reset user profile
+
         profile = await persistProfilePatch({
           bestTimeMs: null,
           lastTimeMs: null,
@@ -1208,8 +1262,7 @@ function initializeEventListeners() {
           attempts: 0,
           failedAttempts: 0
         });
-        
-        // Refresh displays immediately
+
         if (lastResult) lastResult.textContent = '—';
         if (bestResult) bestResult.textContent = '—';
         if (statsBestTime) statsBestTime.textContent = '—';
@@ -1219,15 +1272,12 @@ function initializeEventListeners() {
         if (statsRank) statsRank.textContent = '—';
         applyTierToElement(document.getElementById('statsTier'), null);
         applyTierToElement(document.getElementById('profileTier'), null);
-        
-        // Clear leaderboard and re-listen
+
         leaderboard = [];
         if (leaderboardListFull) leaderboardListFull.innerHTML = '<li style="justify-content:center;color:var(--muted);">Be the first on the board.</li>';
         listenLeaderboard();
-        
+
         setStatus('Stats reset successfully!');
-        
-        // Re-render leaderboard if viewing it
         if (currentView === 'leaderboard') renderLeaderboardFullFromMemory();
       } catch (error) {
         console.error(error);
@@ -1235,7 +1285,7 @@ function initializeEventListeners() {
       }
     });
   }
-  
+
   if (nicknameForm) {
     nicknameForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1250,24 +1300,19 @@ function initializeEventListeners() {
 
       try {
         setStatus('Checking nickname availability...');
-        
-        // Check if nickname + color combination already exists
-        const leaderboardSnap = await getDoc(doc(db, 'leaderboard', nickname + color));
-        const usersSnap = await getDoc(doc(db, 'users', nickname + color));
-        
-        // Query leaderboard for existing nickname+color combo
+
         const leaderboardQuery = query(
           collection(db, 'leaderboard'),
           where('nickname', '==', nickname),
           where('nicknameColor', '==', color)
         );
         const leaderboardDocs = await getDocs(leaderboardQuery);
-        
+
         if (leaderboardDocs.size > 0) {
           setStatus('This nickname with this color is already taken. Choose a different combination.');
           return;
         }
-        
+
         setStatus('Starting game...');
 
         if (!auth.currentUser) {
@@ -1288,8 +1333,6 @@ function initializeEventListeners() {
         setStatus(safeErrorMessage(error));
       }
     });
-  } else {
-    console.warn('nicknameForm element not found');
   }
 
   if (navTabs.length) {
@@ -1333,29 +1376,18 @@ function initializeEventListeners() {
     });
   }
 
-  // Difficulty button listeners
   const difficultyBtns = document.querySelectorAll('.difficulty-btn');
   if (difficultyBtns.length > 0) {
     difficultyBtns.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const difficulty = btn.dataset.difficulty;
         if (!difficulty) return;
-        
-        // Update global state
         currentDifficulty = difficulty;
-        
-        // Update active button state
         difficultyBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        // Reset game stage if in progress
-        if (phase !== 'idle') {
-          resetGameStage();
-        }
+        if (phase !== 'idle') resetGameStage();
       });
     });
-    
-    // Set initial active state to easy button
     const easyBtn = document.querySelector('[data-difficulty="easy"]');
     if (easyBtn) easyBtn.classList.add('active');
   }
@@ -1375,7 +1407,6 @@ function initializeEventListeners() {
   }
 }
 
-// Initialize event listeners when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeEventListeners);
 } else {
@@ -1418,3 +1449,5 @@ onAuthStateChanged(auth, async (user) => {
 resetGameStage();
 showView('auth');
 setStatus('Enter a nickname to begin.');
+ENDOFFILE
+echo "done"
