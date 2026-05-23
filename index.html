@@ -1,295 +1,351 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rash Reflex</title>
-  <meta name="description" content="Rash Reflex is a clean reaction-time game built with Firebase authentication, nicknames, and a global leaderboard." />
-  <meta name="theme-color" content="#0b0f16" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- ============================================================
+     SEO: Page Title
+     Keep under 60 characters. Front-load the main keyword.
+     ============================================================ -->
+<title>Rash Reflex – Free Online Reaction Time Test & Speed Game</title>
+
+<!-- ============================================================
+     SEO: Meta Description
+     Keep under 160 characters. This is what shows in Google results.
+     ============================================================ -->
+<meta name="description" content="Test your reaction speed online — free reaction time game with a global leaderboard, daily challenges, and performance tiers. How fast are you?" />
+
+<!-- ============================================================
+     SEO: Keywords (minor signal but doesn't hurt)
+     ============================================================ -->
+<meta name="keywords" content="reaction time test, reaction speed game, reflex test, online reaction game, free reaction timer, global leaderboard, daily challenge" />
+
+<!-- ============================================================
+     SEO: Robots — tells Google to index the page and follow links
+     ============================================================ -->
+<meta name="robots" content="index, follow" />
+
+<!-- ============================================================
+     SEO: Canonical URL — prevents duplicate-content issues
+     ============================================================ -->
+<link rel="canonical" href="https://rashreflex.vercel.app/" />
+
+<!-- ============================================================
+     SEO: Author
+     ============================================================ -->
+<meta name="author" content="Rakesh" />
+
+<!-- ============================================================
+     Open Graph — controls previews on Discord, WhatsApp,
+     Facebook, LinkedIn, Telegram, Slack, etc.
+     ============================================================ -->
+<meta property="og:type"        content="website" />
+<meta property="og:url"         content="https://rashreflex.vercel.app/" />
+<meta property="og:site_name"   content="Rash Reflex" />
+<meta property="og:title"       content="Rash Reflex – Free Online Reaction Time Test" />
+<meta property="og:description" content="How fast are your reflexes? Play free, compete on the global leaderboard, and take on daily challenges. No download needed." />
+<!-- 
+  og:image tip: Create a 1200×630 px preview image (e.g. in Canva) and
+  host it in your repo or on an image CDN. Replace the URL below.
+  Until then, the logo will be used as a fallback.
+-->
+<meta property="og:image"       content="https://rashreflex.vercel.app/logo.png" />
+<meta property="og:image:alt"   content="Rash Reflex – Reaction Time Game" />
+<meta property="og:image:width"  content="512" />
+<meta property="og:image:height" content="512" />
+<meta property="og:locale"      content="en_US" />
+
+<!-- ============================================================
+     Twitter / X Card — controls previews when shared on Twitter/X
+     summary_large_image shows a big image card (much more eye-catching)
+     ============================================================ -->
+<meta name="twitter:card"        content="summary_large_image" />
+<meta name="twitter:title"       content="Rash Reflex – Free Online Reaction Time Test" />
+<meta name="twitter:description" content="How fast are your reflexes? Free reaction game with global leaderboard & daily challenges. Play now 👉 rashreflex.vercel.app" />
+<meta name="twitter:image"       content="https://rashreflex.vercel.app/logo.png" />
+<meta name="twitter:image:alt"   content="Rash Reflex – Reaction Time Game" />
+
+<!-- ============================================================
+     Theme color & favicon (unchanged)
+     ============================================================ -->
+<meta name="theme-color" content="#0b0f16" />
+<link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+<!-- ============================================================
+     Fonts & Styles (unchanged)
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <nav class="top-nav hidden" id="topNav">
-    <div class="nav-container">
-      <a href="#" id="navBrandClick" class="nav-brand-link" style="text-decoration:none;">
-        <div class="nav-brand">
-          <img class="brand-mark-mini brand-mark-gradient" src="logo.png" alt="Rash Reflex Logo" />
-          <span>Rash Reflex</span>
-        </div>
-      </a>
+<nav class="top-nav hidden" id="topNav">
+  <div class="nav-container">
+    <a href="#" id="navBrandClick" class="nav-brand-link" style="text-decoration:none;">
+      <div class="nav-brand">
+        <img class="brand-mark-mini brand-mark-gradient" src="logo.png" alt="Rash Reflex Logo" />
+        <span>Rash Reflex</span>
+      </div>
+    </a>
+    <ul class="nav-tabs">
+      <li><button class="nav-tab active" data-view="play" id="navPlay" type="button">PLAY</button></li>
+      <li><button class="nav-tab" data-view="leaderboard" id="navLeaderboard" type="button">LEADERBOARD</button></li>
+      <li><button class="nav-tab" data-view="stats" id="navStats" type="button">STATS</button></li>
+      <li><button class="nav-tab" data-view="profile" id="navProfile" type="button">PROFILE</button></li>
+      <li><button class="nav-tab" data-view="about" id="navAbout" type="button">ABOUT</button></li>
+    </ul>
+    <div class="nav-profile-pill" id="navProfilePill">—</div>
+  </div>
+</nav>
 
-      <ul class="nav-tabs">
-        <li><button class="nav-tab active" data-view="play" id="navPlay" type="button">PLAY</button></li>
-        <li><button class="nav-tab" data-view="leaderboard" id="navLeaderboard" type="button">LEADERBOARD</button></li>
-        <li><button class="nav-tab" data-view="stats" id="navStats" type="button">STATS</button></li>
-        <li><button class="nav-tab" data-view="profile" id="navProfile" type="button">PROFILE</button></li>
-        <li><button class="nav-tab" data-view="about" id="navAbout" type="button">ABOUT</button></li>
-      </ul>
-
-      <div class="nav-profile-pill" id="navProfilePill">—</div>
+<main class="app-shell">
+  <section class="hero-card" id="authView">
+    <div class="brand-row">
+      <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
+      <div>
+        <p class="eyebrow">Reaction test</p>
+        <h1>Rash Reflex</h1>
+      </div>
     </div>
-  </nav>
+    <div class="hero-copy">
+      <h2>Choose Your Nickname</h2>
+    </div>
+    <form id="nicknameForm" class="auth-form">
+      <label>
+        <span>Nickname</span>
+        <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
+      </label>
+      <label>
+        <span>Choose Your Color</span>
+        <div class="color-picker-grid">
+          <button type="button" class="color-btn" data-color="#E8B923" title="Mustard Yellow" style="background-color:#E8B923;"></button>
+          <button type="button" class="color-btn" data-color="#0a1f3b" title="Navy Blue" style="background-color:#0a1f3b;"></button>
+          <button type="button" class="color-btn" data-color="#FFB6D9" title="Blush Pink" style="background-color:#FFB6D9;"></button>
+          <button type="button" class="color-btn" data-color="#0B6623" title="Forest Green" style="background-color:#0B6623;"></button>
+          <button type="button" class="color-btn" data-color="#F5F5F5" title="Crisp White" style="background-color:#F5F5F5; border: 2px solid var(--line);"></button>
+        </div>
+        <input id="nicknameColor" type="hidden" value="#E8B923" required />
+      </label>
+      <button type="submit" class="primary-btn">Start Playing</button>
+    </form>
+    <p id="authStatus" class="status-line">—</p>
+  </section>
 
-  <main class="app-shell">
-    <section class="hero-card" id="authView">
-      <div class="brand-row">
-        <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
+  <section class="game-layout hidden" id="playView">
+    <div class="game-card">
+      <div class="game-header">
+        <div class="difficulty-selector" id="difficultySelector">
+          <button class="difficulty-btn active" data-difficulty="easy" type="button">EASY</button>
+          <button class="difficulty-btn" data-difficulty="medium" type="button">MEDIUM</button>
+          <button class="difficulty-btn" data-difficulty="hard" type="button">HARD</button>
+        </div>
+        <div class="combo-display" id="comboDisplay">
+          <span class="combo-label">COMBO</span>
+          <span class="combo-value" id="comboValue">0</span>
+        </div>
+      </div>
+
+      <div class="game-stage idle" id="gameStage">
+        <div class="stage-copy" id="stageCopy">
+          <h3>Click to get started</h3>
+          <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
+        </div>
+        <button id="gameButton" class="stage-button" type="button">Click to get started</button>
+        <div class="too-slow-indicator hidden" id="tooSlowIndicator">TOO SLOW</div>
+      </div>
+
+      <div class="pressure-bar">
+        <div class="pressure-fill" id="pressureFill"></div>
+      </div>
+
+      <div class="feedback-zone hidden" id="feedbackZone">
+        <div class="feedback-main" id="feedbackMain">—</div>
+        <div class="feedback-sub" id="feedbackSub">—</div>
+        <button class="primary-btn feedback-again-btn" id="feedbackAgainBtn" type="button">Try again</button>
+      </div>
+
+      <div class="result-row">
         <div>
-          <p class="eyebrow">Reaction test</p>
-          <h1>Rash Reflex</h1>
+          <span class="result-label">Last run</span>
+          <strong id="lastResult">—</strong>
+        </div>
+        <div>
+          <span class="result-label">Best run</span>
+          <strong id="bestResult">—</strong>
         </div>
       </div>
 
-      <div class="hero-copy">
-        <h2>Choose Your Nickname</h2>
-      </div>
-
-      <form id="nicknameForm" class="auth-form">
-        <label>
-          <span>Nickname</span>
-          <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
-        </label>
-        <label>
-          <span>Choose Your Color</span>
-          <div class="color-picker-grid">
-            <button type="button" class="color-btn" data-color="#E8B923" title="Mustard Yellow" style="background-color:#E8B923;"></button>
-            <button type="button" class="color-btn" data-color="#0a1f3b" title="Navy Blue" style="background-color:#0a1f3b;"></button>
-            <button type="button" class="color-btn" data-color="#FFB6D9" title="Blush Pink" style="background-color:#FFB6D9;"></button>
-            <button type="button" class="color-btn" data-color="#0B6623" title="Forest Green" style="background-color:#0B6623;"></button>
-            <button type="button" class="color-btn" data-color="#F5F5F5" title="Crisp White" style="background-color:#F5F5F5; border: 2px solid var(--line);"></button>
+      <div id="dailyChallengeCard" class="daily-challenge-card hidden">
+        <div class="dc-inner">
+          <div class="dc-left">
+            <span class="dc-eyebrow">Daily Challenge</span>
+            <span class="dc-target" id="dcTarget">—</span>
           </div>
-          <input id="nicknameColor" type="hidden" value="#E8B923" required />
-        </label>
-        <button type="submit" class="primary-btn">Start Playing</button>
-      </form>
-
-      <p id="authStatus" class="status-line">—</p>
-    </section>
-
-    <section class="game-layout hidden" id="playView">
-      <div class="game-card">
-        <!-- DIFFICULTY & COMBO DISPLAY -->
-        <div class="game-header">
-          <div class="difficulty-selector" id="difficultySelector">
-            <button class="difficulty-btn active" data-difficulty="easy" type="button">EASY</button>
-            <button class="difficulty-btn" data-difficulty="medium" type="button">MEDIUM</button>
-            <button class="difficulty-btn" data-difficulty="hard" type="button">HARD</button>
-          </div>
-          <div class="combo-display" id="comboDisplay">
-            <span class="combo-label">COMBO</span>
-            <span class="combo-value" id="comboValue">0</span>
-          </div>
-        </div>
-
-        <div class="game-stage idle" id="gameStage">
-          <div class="stage-copy" id="stageCopy">
-            <h3>Click to get started</h3>
-            <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
-          </div>
-          <button id="gameButton" class="stage-button" type="button">Click to get started</button>
-          <div class="too-slow-indicator hidden" id="tooSlowIndicator">TOO SLOW</div>
-        </div>
-
-        <div class="pressure-bar">
-          <div class="pressure-fill" id="pressureFill"></div>
-        </div>
-
-        <div class="feedback-zone hidden" id="feedbackZone">
-          <div class="feedback-main" id="feedbackMain">—</div>
-          <div class="feedback-sub" id="feedbackSub">—</div>
-          <button class="primary-btn feedback-again-btn" id="feedbackAgainBtn" type="button">Try again</button>
-        </div>
-
-        <div class="result-row">
-          <div>
-            <span class="result-label">Last run</span>
-            <strong id="lastResult">—</strong>
-          </div>
-          <div>
-            <span class="result-label">Best run</span>
-            <strong id="bestResult">—</strong>
-          </div>
-        </div>
-
-        <div id="dailyChallengeCard" class="daily-challenge-card hidden">
-          <div class="dc-inner">
-            <div class="dc-left">
-              <span class="dc-eyebrow">Daily Challenge</span>
-              <span class="dc-target" id="dcTarget">—</span>
-            </div>
-            <div class="dc-right">
-              <span id="dcCompletions" class="dc-completions">—</span>
-              <span id="dcStatus" class="dc-status dc-active">ACTIVE</span>
-            </div>
+          <div class="dc-right">
+            <span id="dcCompletions" class="dc-completions">—</span>
+            <span id="dcStatus" class="dc-status dc-active">ACTIVE</span>
           </div>
         </div>
       </div>
-    </section>
-
-    <section class="view-section hidden" id="leaderboardView">
-      <div class="page-header">
-        <h2>Leaderboard</h2>
-        <p class="subtitle">Top reaction times from all players</p>
-      </div>
-
-        <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
-      </div>
-    </section>
-
-    <section class="view-section hidden" id="statsView">
-      <div class="page-header">
-        <h2>Your Statistics</h2>
-        <p class="subtitle">Performance breakdown and insights</p>
-      </div>
-      <div class="stats-grid">
-        <div class="stats-card">
-          <span class="stats-label">Best Time</span>
-          <strong class="stats-value" id="statsBestTime">—</strong>
-        </div>
-        <div class="stats-card">
-          <span class="stats-label">Average Time</span>
-          <strong class="stats-value" id="statsAvgTime">—</strong>
-        </div>
-        <div class="stats-card">
-          <span class="stats-label">Slowest Time</span>
-          <strong class="stats-value" id="statsWorstTime">—</strong>
-        </div>
-        <div class="stats-card">
-          <span class="stats-label">Total Attempts</span>
-          <strong class="stats-value" id="statsAttempts">—</strong>
-        </div>
-        <div class="stats-card highlight">
-          <span class="stats-label">Your Rank</span>
-          <strong class="stats-value" id="statsRank">—</strong>
-        </div>
-        <div class="stats-card stats-tier-card">
-          <span class="stats-label">Tier</span>
-          <strong class="stats-value" id="statsTier">—</strong>
-        </div>
-      </div>
-      <div class="sparkline-card" id="sparklineCard">
-        <span class="sparkline-card-label">Recent Rounds</span>
-        <div id="sparklineContainer" class="sparkline-container">
-          <p class="sparkline-empty">Play a few rounds to see your trend.</p>
-        </div>
-      </div>
-
-      <button class="primary-btn reset-stats-btn" id="resetStatsBtn" type="button">Reset Stats</button>
-    </section>
-
-    <section class="view-section hidden" id="profileView">
-      <div class="page-header">
-        <h2>Profile</h2>
-        <p class="subtitle">Manage your account</p>
-      </div>
-      <div class="profile-card">
-        <div class="profile-info">
-          <div class="profile-item">
-            <span class="profile-label">Nickname</span>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <strong id="profileNickname">—</strong>
-              <div id="profileNicknameColorPreview" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);"></div>
-            </div>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Rank Tier</span>
-            <strong id="profileTier" style="font-size:1.1rem;">—</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="view-section hidden" id="aboutView">
-      <div class="page-header">
-        <h2>How to Play</h2>
-        <p class="subtitle">Master the art of reaction speed</p>
-      </div>
-      <div class="about-card">
-        <div class="about-section">
-          <h3>Rules</h3>
-          <ol class="rules-list">
-            <li><strong>Start a Round:</strong> Click the start button to begin.</li>
-            <li><strong>Wait for Green:</strong> The screen turns red first, then green at a random time.</li>
-            <li><strong>React Fast:</strong> Click as soon as the screen becomes green. Milliseconds matter.</li>
-            <li><strong>Do Not Click Early:</strong> If you click while it is still red, the round restarts.</li>
-            <li><strong>Track Progress:</strong> Your best time and rank stay saved to your account.</li>
-          </ol>
-        </div>
-
-        <div class="about-section">
-          <h3>Performance Tiers</h3>
-          <div class="tier-grid">
-            <div class="tier-card">
-              <div class="tier-emoji">🐐</div>
-              <div class="tier-text">
-                <strong>GOAT LEVEL</strong>
-                <p>Under 100 ms</p>
-              </div>
-            </div>
-            <div class="tier-card">
-              <div class="tier-emoji">⚡</div>
-              <div class="tier-text">
-                <strong>INSANE</strong>
-                <p>100–200 ms</p>
-              </div>
-            </div>
-            <div class="tier-card">
-              <div class="tier-emoji">✓</div>
-              <div class="tier-text">
-                <strong>GOOD</strong>
-                <p>200–300 ms</p>
-              </div>
-            </div>
-            <div class="tier-card">
-              <div class="tier-emoji">🐢</div>
-              <div class="tier-text">
-                <strong>SLOW</strong>
-                <p>Above 700 ms</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="about-section">
-          <h3>Compete & Track</h3>
-          <p>Your best reaction time is saved in Firebase and shown on the leaderboard. Try to beat your own record and climb the rankings with cleaner, faster clicks.</p>
-        </div>
-
-        <div class="about-section">
-          <h3>Privacy</h3>
-          <p>Your nickname and scores are stored in Firebase so your progress can sync across sessions and support the leaderboard.</p>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <footer class="app-footer">
-    <p class="footer-credit">Made by Rakesh <a href="https://discord.com/users/1276957718636265556" target="_blank" rel="noopener noreferrer" class="discord-link">Discord↗</a></p>
-  </footer>
-
-  <div id="dcToast" class="dc-toast hidden">
-    <span class="dc-toast-icon">⚡</span>
-    <span class="dc-toast-text">Daily Challenge Complete!</span>
-  </div>
-
-  <div id="failFlash" class="fail-flash-overlay"></div>
-  <div id="pbFlash" class="pb-flash-overlay"></div>
-
-  <div id="tierPromotion" class="tier-promotion-overlay hidden">
-    <div class="tier-promotion-card">
-      <div class="tier-promotion-eyebrow">RANK UP</div>
-      <div class="tier-promo-badge" id="tierPromotionName">GOLD FLASH</div>
-      <div class="tier-promo-desc" id="tierPromotionDesc">Sharp and consistent.</div>
-      <div class="tier-promo-threshold" id="tierPromotionThreshold"></div>
-      <button class="primary-btn tier-promo-close" id="tierPromotionClose" type="button">Continue</button>
     </div>
-  </div>
+  </section>
 
-  <script type="module" src="app.js"></script>
+  <section class="view-section hidden" id="leaderboardView">
+    <div class="page-header">
+      <h2>Leaderboard</h2>
+      <p class="subtitle">Top reaction times from all players</p>
+    </div>
+    <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
+  </section>
+
+  <section class="view-section hidden" id="statsView">
+    <div class="page-header">
+      <h2>Your Statistics</h2>
+      <p class="subtitle">Performance breakdown and insights</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stats-card">
+        <span class="stats-label">Best Time</span>
+        <strong class="stats-value" id="statsBestTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Average Time</span>
+        <strong class="stats-value" id="statsAvgTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Slowest Time</span>
+        <strong class="stats-value" id="statsWorstTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Total Attempts</span>
+        <strong class="stats-value" id="statsAttempts">—</strong>
+      </div>
+      <div class="stats-card highlight">
+        <span class="stats-label">Your Rank</span>
+        <strong class="stats-value" id="statsRank">—</strong>
+      </div>
+      <div class="stats-card stats-tier-card">
+        <span class="stats-label">Tier</span>
+        <strong class="stats-value" id="statsTier">—</strong>
+      </div>
+    </div>
+    <div class="sparkline-card" id="sparklineCard">
+      <span class="sparkline-card-label">Recent Rounds</span>
+      <div id="sparklineContainer" class="sparkline-container">
+        <p class="sparkline-empty">Play a few rounds to see your trend.</p>
+      </div>
+    </div>
+    <button class="primary-btn reset-stats-btn" id="resetStatsBtn" type="button">Reset Stats</button>
+  </section>
+
+  <section class="view-section hidden" id="profileView">
+    <div class="page-header">
+      <h2>Profile</h2>
+      <p class="subtitle">Manage your account</p>
+    </div>
+    <div class="profile-card">
+      <div class="profile-info">
+        <div class="profile-item">
+          <span class="profile-label">Nickname</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <strong id="profileNickname">—</strong>
+            <div id="profileNicknameColorPreview" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);"></div>
+          </div>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Rank Tier</span>
+          <strong id="profileTier" style="font-size:1.1rem;">—</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view-section hidden" id="aboutView">
+    <div class="page-header">
+      <h2>How to Play</h2>
+      <p class="subtitle">Master the art of reaction speed</p>
+    </div>
+    <div class="about-card">
+      <div class="about-section">
+        <h3>Rules</h3>
+        <ol class="rules-list">
+          <li><strong>Start a Round:</strong> Click the start button to begin.</li>
+          <li><strong>Wait for Green:</strong> The screen turns red first, then green at a random time.</li>
+          <li><strong>React Fast:</strong> Click as soon as the screen becomes green. Milliseconds matter.</li>
+          <li><strong>Do Not Click Early:</strong> If you click while it is still red, the round restarts.</li>
+          <li><strong>Track Progress:</strong> Your best time and rank stay saved to your account.</li>
+        </ol>
+      </div>
+      <div class="about-section">
+        <h3>Performance Tiers</h3>
+        <div class="tier-grid">
+          <div class="tier-card">
+            <div class="tier-emoji">🐐</div>
+            <div class="tier-text">
+              <strong>GOAT LEVEL</strong>
+              <p>Under 100 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">⚡</div>
+            <div class="tier-text">
+              <strong>INSANE</strong>
+              <p>100–200 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">✓</div>
+            <div class="tier-text">
+              <strong>GOOD</strong>
+              <p>200–300 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">🐢</div>
+            <div class="tier-text">
+              <strong>SLOW</strong>
+              <p>Above 700 ms</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="about-section">
+        <h3>Compete & Track</h3>
+        <p>Your best reaction time is saved in Firebase and shown on the leaderboard. Try to beat your own record and climb the rankings with cleaner, faster clicks.</p>
+      </div>
+      <div class="about-section">
+        <h3>Privacy</h3>
+        <p>Your nickname and scores are stored in Firebase so your progress can sync across sessions and support the leaderboard.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p class="footer-credit">Made by Rakesh <a href="https://discord.com/users/1276957718636265556" target="_blank" rel="noopener noreferrer" class="discord-link">Discord↗</a></p>
+</footer>
+
+<div id="dcToast" class="dc-toast hidden">
+  <span class="dc-toast-icon">⚡</span>
+  <span class="dc-toast-text">Daily Challenge Complete!</span>
+</div>
+
+<div id="failFlash" class="fail-flash-overlay"></div>
+<div id="pbFlash" class="pb-flash-overlay"></div>
+
+<div id="tierPromotion" class="tier-promotion-overlay hidden">
+  <div class="tier-promotion-card">
+    <div class="tier-promotion-eyebrow">RANK UP</div>
+    <div class="tier-promo-badge" id="tierPromotionName">GOLD FLASH</div>
+    <div class="tier-promo-desc" id="tierPromotionDesc">Sharp and consistent.</div>
+    <div class="tier-promo-threshold" id="tierPromotionThreshold"></div>
+    <button class="primary-btn tier-promo-close" id="tierPromotionClose" type="button">Continue</button>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
 </body>
 </html>
