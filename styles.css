@@ -522,6 +522,19 @@ input:focus {
   color: var(--text);
   border: 1px solid var(--line);
   margin-top: 16px;
+  transition: all 0.3s ease;
+}
+
+.stage-button:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.stage-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .too-slow-indicator {
@@ -553,10 +566,16 @@ input:focus {
   border-radius: 18px;
   background: var(--panel-soft);
   border: 1px solid var(--line);
+  animation: slideUp 0.4s ease-out;
 }
 
 .result-row > div {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .result-label {
@@ -619,7 +638,15 @@ input:focus {
   border-radius: 16px;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--line);
+  animation: slideUp 0.4s ease-out backwards;
 }
+
+.leaderboard-list li:nth-child(1), .leaderboard-list-full li:nth-child(1) { animation-delay: 0.05s; }
+.leaderboard-list li:nth-child(2), .leaderboard-list-full li:nth-child(2) { animation-delay: 0.1s; }
+.leaderboard-list li:nth-child(3), .leaderboard-list-full li:nth-child(3) { animation-delay: 0.15s; }
+.leaderboard-list li:nth-child(4), .leaderboard-list-full li:nth-child(4) { animation-delay: 0.2s; }
+.leaderboard-list li:nth-child(5), .leaderboard-list-full li:nth-child(5) { animation-delay: 0.25s; }
+.leaderboard-list li:nth-child(n+6), .leaderboard-list-full li:nth-child(n+6) { animation-delay: 0.3s; }
 
 .lb-left {
   display: flex;
@@ -755,6 +782,7 @@ input:focus {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 .feedback-zone:not(.hidden) {
   visibility: visible;
@@ -824,6 +852,19 @@ input:focus {
 .stats-card {
   padding: 20px;
   text-align: center;
+  animation: slideUp 0.5s ease-out backwards;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-card:nth-child(2) { animation-delay: 0.15s; }
+.stats-card:nth-child(3) { animation-delay: 0.2s; }
+.stats-card:nth-child(4) { animation-delay: 0.25s; }
+.stats-card:nth-child(5) { animation-delay: 0.3s; }
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 255, 247, 0.15);
 }
 
 .stats-card.highlight {
