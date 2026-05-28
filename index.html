@@ -1,269 +1,363 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REFLEX//ZERO — Tactical Reaction Trainer</title>
-  <meta name="description" content="A cinematic tactical reaction trainer with leaderboard, stats, dossier, and mission brief sections." />
-  <link rel="icon" href="data:,">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
+
+<!-- ============================================================
+     SEO: Page Title
+     Keep under 60 characters. Front-load the main keyword.
+     ============================================================ -->
+<title>Rash Reflex – Free Online Reaction Time Test & Speed Game</title>
+
+<!-- ============================================================
+     SEO: Meta Description
+     Keep under 160 characters. This is what shows in Google results.
+     ============================================================ -->
+<meta name="description" content="Test your reaction speed online — free reaction time game with a global leaderboard, daily challenges, and performance tiers. How fast are you?" />
+
+<!-- ============================================================
+     SEO: Keywords (minor signal but doesn't hurt)
+     ============================================================ -->
+<meta name="keywords" content="reaction time test, reaction speed game, reflex test, online reaction game, free reaction timer, global leaderboard, daily challenge" />
+
+<!-- ============================================================
+     SEO: Robots — tells Google to index the page and follow links
+     ============================================================ -->
+<meta name="robots" content="index, follow" />
+
+<!-- ============================================================
+     SEO: Canonical URL — prevents duplicate-content issues
+     ============================================================ -->
+<link rel="canonical" href="https://rashreflex.vercel.app/" />
+
+<!-- ============================================================
+     SEO: Author
+     ============================================================ -->
+<meta name="author" content="Rakesh" />
+
+<!-- ============================================================
+     Mobile & App Optimization
+     ============================================================ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rash Reflex" />
+
+<!-- ============================================================
+     Open Graph — controls previews on Discord, WhatsApp,
+     Facebook, LinkedIn, Telegram, Slack, etc.
+     ============================================================ -->
+<meta property="og:type"        content="website" />
+<meta property="og:url"         content="https://rashreflex.vercel.app/" />
+<meta property="og:site_name"   content="Rash Reflex" />
+<meta property="og:title"       content="Rash Reflex – Free Online Reaction Time Test" />
+<meta property="og:description" content="How fast are your reflexes? Play free, compete on the global leaderboard, and take on daily challenges. No download needed." />
+<!-- 
+  og:image tip: Create a 1200×630 px preview image (e.g. in Canva) and
+  host it in your repo or on an image CDN. Replace the URL below.
+  Until then, the logo will be used as a fallback.
+-->
+<meta property="og:image"       content="https://rashreflex.vercel.app/og-image.png" />
+<meta property="og:image:alt"   content="Rash Reflex – Reaction Time Game" />
+<meta property="og:image:width"  content="512" />
+<meta property="og:image:height" content="512" />
+<meta property="og:locale"      content="en_US" />
+
+<!-- ============================================================
+     Twitter / X Card — controls previews when shared on Twitter/X
+     summary_large_image shows a big image card (much more eye-catching)
+     ============================================================ -->
+<meta name="twitter:card"        content="summary_large_image" />
+<meta name="twitter:title"       content="Rash Reflex – Free Online Reaction Time Test" />
+<meta name="twitter:description" content="How fast are your reflexes? Free reaction game with global leaderboard & daily challenges. Play now 👉 rashreflex.vercel.app" />
+<meta name="twitter:image"       content="https://rashreflex.vercel.app/og-image.png" />
+<meta name="twitter:image:alt"   content="Rash Reflex – Reaction Time Game" />
+
+<!-- ============================================================
+     Theme color & favicon (unchanged)
+     ============================================================ -->
+<meta name="theme-color" content="#0b0f16" />
+<link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+<!-- ============================================================
+     Performance Optimization - Preload Critical Resources
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     Stylesheet with performance optimization
+     ============================================================ -->
+<link rel="stylesheet" href="styles.css" media="all" />
 </head>
 <body>
-  <div class="noise"></div>
-  <div class="scanlines"></div>
-
-  <header class="topbar">
-    <div class="status-row">
-      <span id="statusText">[00:00:00] · OP_STATUS: ACTIVE · SIGNAL: LOCKED · OPERATIVES_ONLINE: 4,217 · SESSION_ID: XXXX · LAST_PB: — · BUILD: REFLEX//ZERO v2.6.0 ·</span>
-    </div>
-
-    <div class="brand-row">
-      <button id="navBrandClick" class="brand" type="button" aria-label="Go to Play">
-        <span class="brand-mark">REFLEX</span><span class="brand-slash">//</span><span class="brand-zero">ZERO</span>
-      </button>
-
-      <nav id="topNav" class="nav-tabs" aria-label="Primary">
-        <button class="nav-tab active" data-view="play" type="button">PLAY</button>
-        <button class="nav-tab" data-view="board" type="button">BOARD</button>
-        <button class="nav-tab" data-view="stats" type="button">STATS</button>
-        <button class="nav-tab" data-view="dossier" type="button">DOSSIER</button>
-        <button class="nav-tab" data-view="brief" type="button">BRIEF</button>
-      </nav>
-    </div>
-  </header>
-
-  <main class="shell">
-    <section id="authView" class="panel hero-panel">
-      <div class="eyebrow">REACTION_TIME // TACTICAL_TRAINER</div>
-      <div class="hero-copy">
-        <p class="shell-note">&gt; INITIALIZING REFLEX MATRIX_</p>
-        <h1>REFLEX//ZERO</h1>
-        <h2>OPERATIVE REGISTRATION</h2>
-        <p class="lede">Assign a callsign. Select a faction color. Begin training.</p>
+<nav class="top-nav hidden" id="topNav">
+  <div class="nav-container">
+    <a href="#" id="navBrandClick" class="nav-brand-link" style="text-decoration:none;">
+      <div class="nav-brand">
+        <img class="brand-mark-mini brand-mark-gradient" src="logo.png" alt="Rash Reflex Logo" />
+        <span>Rash Reflex</span>
       </div>
-
-      <form id="nicknameForm" class="auth-grid">
-        <label class="field">
-          <span>01 // CALLSIGN</span>
-          <input id="nicknameInput" maxlength="20" autocomplete="nickname" placeholder="OPERATIVE-01" />
-        </label>
-
-        <div class="field">
-          <span>02 // FACTION COLOR</span>
-          <div class="color-pills" role="group" aria-label="Faction colors">
-            <button type="button" class="color-btn active" data-color="alpha" style="--swatch:#00ff41">ALPHA</button>
-            <button type="button" class="color-btn" data-color="bravo" style="--swatch:#40d9ff">BRAVO</button>
-            <button type="button" class="color-btn" data-color="omega" style="--swatch:#ff4fd8">OMEGA</button>
-          </div>
-          <input id="nicknameColor" type="hidden" value="alpha" />
-        </div>
-
-        <button id="deployBtn" class="deploy-btn" type="submit">DEPLOY OPERATIVE</button>
-        <div id="authStatus" class="auth-status">&gt; AWAITING INPUT_</div>
-      </form>
-    </section>
-
-    <section id="playView" class="grid-view hidden">
-      <div class="left-column">
-        <section class="panel info-strip">
-          <div>
-            <div class="mini-label">THREAT</div>
-            <div class="mini-value" id="threatLevel">LOW</div>
-          </div>
-          <div>
-            <div class="mini-label">STAMINA</div>
-            <div class="mini-value" id="staminaLevel">VITAL</div>
-          </div>
-          <div>
-            <div class="mini-label">COMBO ×</div>
-            <div class="mini-value accent" id="comboValue">0</div>
-          </div>
-        </section>
-
-        <section class="panel stage-panel">
-          <div class="stage-head">
-            <div>
-              <div class="eyebrow">READY THE OPERATIVE</div>
-              <h2 id="stageTitle">Stand by. Wait for the GREEN signal.</h2>
-            </div>
-            <button id="difficultySwitch" class="ghost-btn" type="button" aria-label="Cycle difficulty">EASY</button>
-          </div>
-
-          <p id="stageCopy" class="stage-copy">Premature input fails the round.</p>
-
-          <div id="gameStage" class="game-stage idle" role="button" tabindex="0" aria-label="Reaction stage">
-            <div class="stage-rim"></div>
-            <div class="stage-inner">
-              <div class="signal-tag">SIGNAL</div>
-              <div id="signalBars" class="signal-bars" aria-hidden="true">
-                <span></span><span></span><span></span>
-              </div>
-              <button id="gameButton" class="game-button" type="button">ENGAGE</button>
-              <div id="tooSlowIndicator" class="too-slow hidden">—</div>
-            </div>
-          </div>
-
-          <div id="feedbackZone" class="feedback-zone hidden">
-            <div class="feedback-main" id="feedbackMain">—</div>
-            <div class="feedback-sub" id="feedbackSub">—</div>
-            <button id="feedbackAgainBtn" class="ghost-btn" type="button">RE-ENGAGE</button>
-          </div>
-
-          <div class="result-row">
-            <div><span>LAST_RUN</span><strong id="lastResult">—</strong></div>
-            <div><span>PERSONAL_BEST</span><strong id="bestResult">—</strong></div>
-            <div><span>RANK</span><strong id="rankResult">RECRUIT</strong></div>
-            <div><span>SESSION</span><strong id="sessionClock">00:00</strong></div>
-          </div>
-
-          <div class="daily-card" id="dailyChallengeCard">
-            <div>
-              <div class="mini-label">DAILY_CHALLENGE</div>
-              <div class="mini-value" id="dcTarget">sub-000ms</div>
-            </div>
-            <div>
-              <div class="mini-label">COMPLETIONS</div>
-              <div class="mini-value" id="dcCompletions">0 players completed today</div>
-            </div>
-            <div id="dcStatus" class="dc-status dc-active">ACTIVE</div>
-          </div>
-
-          <div class="sparrow">
-            <div class="mini-label">RECENT_TIMES</div>
-            <div id="sparklineContainer" class="sparkline">Play a few rounds to see your trend.</div>
-          </div>
-        </section>
-      </div>
-
-      <aside class="right-column">
-        <section class="panel side-panel">
-          <div class="panel-title">GLOBAL_OPERATIVE_RANKINGS</div>
-          <h3>BOARD</h3>
-          <p>Fastest verified reaction times across all operatives.</p>
-          <ol id="leaderboardList" class="leaderboard-list"></ol>
-        </section>
-
-        <section class="panel side-panel">
-          <div class="panel-title">OPERATIVE_TELEMETRY</div>
-          <h3>STATS</h3>
-          <p>Performance breakdown across all logged engagements.</p>
-
-          <div class="stats-grid">
-            <div><span>BEST_TIME</span><strong id="statsBestTime">—</strong></div>
-            <div><span>AVG_TIME</span><strong id="statsAvgTime">—</strong></div>
-            <div><span>LAST_TIME</span><strong id="statsLastTime">—</strong></div>
-            <div><span>ATTEMPTS</span><strong id="statsAttempts">0</strong></div>
-            <div><span>RANK</span><strong id="statsRank">—</strong></div>
-            <div><span>TIER</span><strong id="statsTier">—</strong></div>
-          </div>
-
-          <button id="resetStatsBtn" class="danger-btn" type="button">PURGE TELEMETRY</button>
-        </section>
-      </aside>
-    </section>
-
-    <section id="boardView" class="panel content-panel hidden">
-      <div class="panel-title">// GLOBAL_OPERATIVE_RANKINGS</div>
-      <h2>BOARD</h2>
-      <p>Fastest verified reaction times across all operatives.</p>
-      <ol id="boardViewList" class="leaderboard-list large"></ol>
-    </section>
-
-    <section id="statsView" class="panel content-panel hidden">
-      <div class="panel-title">// OPERATIVE_TELEMETRY</div>
-      <h2>STATS</h2>
-      <p>Performance breakdown across all logged engagements.</p>
-      <div class="stats-grid wide">
-        <div><span>BEST_TIME</span><strong id="statsBestTime2">—</strong></div>
-        <div><span>AVG_TIME</span><strong id="statsAvgTime2">—</strong></div>
-        <div><span>LAST_TIME</span><strong id="statsLastTime2">—</strong></div>
-        <div><span>ATTEMPTS</span><strong id="statsAttempts2">0</strong></div>
-        <div><span>RANK</span><strong id="statsRank2">—</strong></div>
-        <div><span>TIER</span><strong id="statsTier2">—</strong></div>
-      </div>
-      <button id="resetStatsBtn2" class="danger-btn" type="button">PURGE TELEMETRY</button>
-    </section>
-
-    <section id="dossierView" class="panel content-panel hidden">
-      <div class="panel-title">// OPERATIVE_DOSSIER</div>
-      <h2>DOSSIER</h2>
-      <p>Active operative file.</p>
-
-      <div class="dossier-grid">
-        <div>
-          <span>CALLSIGN</span>
-          <strong id="profileNickname">—</strong>
-        </div>
-        <div>
-          <span>FACTION</span>
-          <strong id="profileFaction">—</strong>
-        </div>
-        <div>
-          <span>CLEARANCE</span>
-          <strong id="profileTier">RECRUIT</strong>
-        </div>
-        <div>
-          <span>OPERATIVE_ID</span>
-          <strong id="profileId">—</strong>
-        </div>
-      </div>
-
-      <div class="profile-swatch">
-        <div id="profileNicknameColorPreview" class="swatch-preview"></div>
-        <p>Current field identity and faction marker.</p>
-      </div>
-    </section>
-
-    <section id="briefView" class="panel content-panel hidden">
-      <div class="panel-title">// MISSION_BRIEFING</div>
-      <h2>BRIEF</h2>
-      <p>How to operate. How to climb.</p>
-
-      <div class="brief-columns">
-        <div>
-          <h3>OPERATIONS</h3>
-          <ol class="brief-list">
-            <li>ENGAGE: Tap ENGAGE to start a round.</li>
-            <li>HOLD: Screen turns RED. Stay still while the signal loads.</li>
-            <li>FIRE: Screen flashes GREEN. Click. Milliseconds matter.</li>
-            <li>ABORT: Clicking during RED counts as a system fault.</li>
-            <li>CLIMB: Stack combo to escalate threat and unlock new ranks.</li>
-          </ol>
-        </div>
-
-        <div>
-          <h3>CLEARANCE TIERS</h3>
-          <div class="tier-grid">
-            <div><span>T0</span><strong>RECRUIT</strong><small>&gt; 350 ms</small></div>
-            <div><span>T1</span><strong>OPERATIVE</strong><small>250 – 350 ms</small></div>
-            <div><span>T2</span><strong>ELITE</strong><small>180 – 250 ms</small></div>
-            <div><span>T3</span><strong>APEX</strong><small>120 – 180 ms</small></div>
-            <div><span>T4</span><strong>ZERO</strong><small>&lt; 120 ms</small></div>
-          </div>
-        </div>
-      </div>
-
-      <p class="network-note">Reaction times are tracked locally in this build so you can deploy and iterate without extra setup.</p>
-    </section>
-  </main>
-
-  <div id="tierPromotion" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Tier promotion">
-    <div class="overlay-card">
-      <button id="tierPromotionClose" class="overlay-close" type="button">×</button>
-      <div class="panel-title">RANK UP</div>
-      <h2 id="tierPromotionName">GOLD FLASH</h2>
-      <p id="tierPromotionDesc">Sharp and consistent.</p>
-      <div id="tierPromotionThreshold" class="overlay-threshold">Next tier: —</div>
-      <button id="tierPromotionContinue" class="ghost-btn" type="button">Continue</button>
-    </div>
+    </a>
+    <ul class="nav-tabs">
+      <li><button class="nav-tab active" data-view="play" id="navPlay" type="button">PLAY</button></li>
+      <li><button class="nav-tab" data-view="leaderboard" id="navLeaderboard" type="button">LEADERBOARD</button></li>
+      <li><button class="nav-tab" data-view="stats" id="navStats" type="button">STATS</button></li>
+      <li><button class="nav-tab" data-view="profile" id="navProfile" type="button">PROFILE</button></li>
+      <li><button class="nav-tab" data-view="about" id="navAbout" type="button">ABOUT</button></li>
+    </ul>
+    <div class="nav-profile-pill" id="navProfilePill">—</div>
   </div>
+</nav>
 
-  <footer class="footer">
-    <span>REFLEX//ZERO · v2.6.0 — tactical reaction trainer · forged by Rakesh</span>
-  </footer>
+<main class="app-shell">
+  <section class="hero-card" id="authView">
+    <div class="brand-row">
+      <img class="brand-mark" src="logo.png" alt="Rash Reflex Logo" />
+      <div>
+        <p class="eyebrow">Reaction test</p>
+        <h1>Rash Reflex</h1>
+      </div>
+    </div>
+    <div class="hero-copy">
+      <h2>Choose Your Nickname</h2>
+    </div>
+    <form id="nicknameForm" class="auth-form">
+      <label>
+        <span>Nickname</span>
+        <input id="nicknameInput" type="text" placeholder="RashFlash" maxlength="20" required />
+      </label>
+      <label>
+        <span>Choose Your Color</span>
+        <div class="color-picker-grid">
+          <button type="button" class="color-btn" data-color="#E8B923" title="Mustard Yellow" style="background-color:#E8B923;"></button>
+          <button type="button" class="color-btn" data-color="#0a1f3b" title="Navy Blue" style="background-color:#0a1f3b;"></button>
+          <button type="button" class="color-btn" data-color="#FFB6D9" title="Blush Pink" style="background-color:#FFB6D9;"></button>
+          <button type="button" class="color-btn" data-color="#0B6623" title="Forest Green" style="background-color:#0B6623;"></button>
+          <button type="button" class="color-btn" data-color="#F5F5F5" title="Crisp White" style="background-color:#F5F5F5; border: 2px solid var(--line);"></button>
+        </div>
+        <input id="nicknameColor" type="hidden" value="#E8B923" required />
+      </label>
+      <button type="submit" class="primary-btn">Start Playing</button>
+    </form>
+    <p id="authStatus" class="status-line">—</p>
+  </section>
 
-  <script type="module" src="./app.js"></script>
+  <section class="game-layout hidden" id="playView">
+    <div class="game-card">
+      <div class="game-header">
+        <div class="difficulty-selector" id="difficultySelector">
+          <button class="difficulty-btn active" data-difficulty="easy" type="button">EASY</button>
+          <button class="difficulty-btn" data-difficulty="medium" type="button">MEDIUM</button>
+          <button class="difficulty-btn" data-difficulty="hard" type="button">HARD</button>
+        </div>
+        <div class="combo-display" id="comboDisplay">
+          <span class="combo-label">COMBO</span>
+          <span class="combo-value" id="comboValue">0</span>
+        </div>
+      </div>
+
+      <div class="game-stage idle" id="gameStage">
+        <div class="stage-copy" id="stageCopy">
+          <h3>Click to get started</h3>
+          <p>Wait for the screen to turn green. Click too early and you will have to restart.</p>
+        </div>
+        <button id="gameButton" class="stage-button" type="button">Click to get started</button>
+        <div class="too-slow-indicator hidden" id="tooSlowIndicator">TOO SLOW</div>
+      </div>
+
+      <div class="pressure-bar">
+        <div class="pressure-fill" id="pressureFill"></div>
+      </div>
+
+      <div class="feedback-zone hidden" id="feedbackZone">
+        <div class="feedback-main" id="feedbackMain">—</div>
+        <div class="feedback-sub" id="feedbackSub">—</div>
+        <button class="primary-btn feedback-again-btn" id="feedbackAgainBtn" type="button">Try again</button>
+      </div>
+
+      <div class="result-row">
+        <div>
+          <span class="result-label">Last run</span>
+          <strong id="lastResult">—</strong>
+        </div>
+        <div>
+          <span class="result-label">Best run</span>
+          <strong id="bestResult">—</strong>
+        </div>
+      </div>
+
+      <div id="dailyChallengeCard" class="daily-challenge-card hidden">
+        <div class="dc-inner">
+          <div class="dc-left">
+            <span class="dc-eyebrow">Daily Challenge</span>
+            <span class="dc-target" id="dcTarget">—</span>
+          </div>
+          <div class="dc-right">
+            <span id="dcCompletions" class="dc-completions">—</span>
+            <span id="dcStatus" class="dc-status dc-active">ACTIVE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view-section hidden" id="leaderboardView">
+    <div class="page-header">
+      <h2>Leaderboard</h2>
+      <p class="subtitle">Top reaction times from all players</p>
+    </div>
+    <ol id="leaderboardListFull" class="leaderboard-list-full"></ol>
+  </section>
+
+  <section class="view-section hidden" id="statsView">
+    <div class="page-header">
+      <h2>Your Statistics</h2>
+      <p class="subtitle">Performance breakdown and insights</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stats-card">
+        <span class="stats-label">Best Time</span>
+        <strong class="stats-value" id="statsBestTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Average Time</span>
+        <strong class="stats-value" id="statsAvgTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Slowest Time</span>
+        <strong class="stats-value" id="statsWorstTime">—</strong>
+      </div>
+      <div class="stats-card">
+        <span class="stats-label">Total Attempts</span>
+        <strong class="stats-value" id="statsAttempts">—</strong>
+      </div>
+      <div class="stats-card highlight">
+        <span class="stats-label">Your Rank</span>
+        <strong class="stats-value" id="statsRank">—</strong>
+      </div>
+      <div class="stats-card stats-tier-card">
+        <span class="stats-label">Tier</span>
+        <strong class="stats-value" id="statsTier">—</strong>
+      </div>
+    </div>
+    <div class="sparkline-card" id="sparklineCard">
+      <span class="sparkline-card-label">Recent Rounds</span>
+      <div id="sparklineContainer" class="sparkline-container">
+        <p class="sparkline-empty">Play a few rounds to see your trend.</p>
+      </div>
+    </div>
+    <button class="primary-btn reset-stats-btn" id="resetStatsBtn" type="button">Reset Stats</button>
+  </section>
+
+  <section class="view-section hidden" id="profileView">
+    <div class="page-header">
+      <h2>Profile</h2>
+      <p class="subtitle">Manage your account</p>
+    </div>
+    <div class="profile-card">
+      <div class="profile-info">
+        <div class="profile-item">
+          <span class="profile-label">Nickname</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <strong id="profileNickname">—</strong>
+            <div id="profileNicknameColorPreview" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);"></div>
+          </div>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Rank Tier</span>
+          <strong id="profileTier" style="font-size:1.1rem;">—</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view-section hidden" id="aboutView">
+    <div class="page-header">
+      <h2>How to Play</h2>
+      <p class="subtitle">Master the art of reaction speed</p>
+    </div>
+    <div class="about-card">
+      <div class="about-section">
+        <h3>Rules</h3>
+        <ol class="rules-list">
+          <li><strong>Start a Round:</strong> Click the start button to begin.</li>
+          <li><strong>Wait for Green:</strong> The screen turns red first, then green at a random time.</li>
+          <li><strong>React Fast:</strong> Click as soon as the screen becomes green. Milliseconds matter.</li>
+          <li><strong>Do Not Click Early:</strong> If you click while it is still red, the round restarts.</li>
+          <li><strong>Track Progress:</strong> Your best time and rank stay saved to your account.</li>
+        </ol>
+      </div>
+      <div class="about-section">
+        <h3>Performance Tiers</h3>
+        <div class="tier-grid">
+          <div class="tier-card">
+            <div class="tier-emoji">🐐</div>
+            <div class="tier-text">
+              <strong>GOAT LEVEL</strong>
+              <p>Under 100 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">⚡</div>
+            <div class="tier-text">
+              <strong>INSANE</strong>
+              <p>100–200 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">✓</div>
+            <div class="tier-text">
+              <strong>GOOD</strong>
+              <p>200–300 ms</p>
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-emoji">🐢</div>
+            <div class="tier-text">
+              <strong>SLOW</strong>
+              <p>Above 700 ms</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="about-section">
+        <h3>Compete & Track</h3>
+        <p>Your best reaction time is saved in Firebase and shown on the leaderboard. Try to beat your own record and climb the rankings with cleaner, faster clicks.</p>
+      </div>
+      <div class="about-section">
+        <h3>Privacy</h3>
+        <p>Your nickname and scores are stored in Firebase so your progress can sync across sessions and support the leaderboard.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p class="footer-credit">Made by Rakesh <a href="https://discord.com/users/1276957718636265556" target="_blank" rel="noopener noreferrer" class="discord-link">Discord↗</a></p>
+</footer>
+
+<div id="dcToast" class="dc-toast hidden">
+  <span class="dc-toast-icon">⚡</span>
+  <span class="dc-toast-text">Daily Challenge Complete!</span>
+</div>
+
+<div id="failFlash" class="fail-flash-overlay"></div>
+<div id="pbFlash" class="pb-flash-overlay"></div>
+
+<div id="tierPromotion" class="tier-promotion-overlay hidden">
+  <div class="tier-promotion-card">
+    <div class="tier-promotion-eyebrow">RANK UP</div>
+    <div class="tier-promo-badge" id="tierPromotionName">GOLD FLASH</div>
+    <div class="tier-promo-desc" id="tierPromotionDesc">Sharp and consistent.</div>
+    <div class="tier-promo-threshold" id="tierPromotionThreshold"></div>
+    <button class="primary-btn tier-promo-close" id="tierPromotionClose" type="button">Continue</button>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
 </body>
 </html>

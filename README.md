@@ -1,10 +1,14 @@
-# REFLEX//ZERO redesign
+# Rash Reflex
 
-This folder contains a redesigned version of the site inspired by the reference layout.
+## Setup
+1. Put your Firebase web config into `firebase-config.js`.
+2. Enable Authentication providers:
+   - Email / Password
+   - Google
+3. Add your local and deployed domains in:
+   Authentication → Settings → Authorized domains
+4. Deploy with your preferred host.
 
-Files:
-- `index.html`
-- `styles.css`
-- `app.js`
-
-It is self-contained and uses localStorage for progress and leaderboard data so it can run without extra backend setup.
+## Firestore structure
+- `users/{uid}` for profile data
+- `leaderboard/{uid}` for best reaction times
