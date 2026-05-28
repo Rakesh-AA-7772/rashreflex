@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
 
 <!-- ============================================================
      SEO: Page Title
@@ -36,6 +36,13 @@
      SEO: Author
      ============================================================ -->
 <meta name="author" content="Rakesh" />
+
+<!-- ============================================================
+     Mobile & App Optimization
+     ============================================================ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rash Reflex" />
 
 <!-- ============================================================
      Open Graph — controls previews on Discord, WhatsApp,
@@ -74,12 +81,17 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico" />
 
 <!-- ============================================================
-     Fonts & Styles (unchanged)
+     Performance Optimization - Preload Critical Resources
      ============================================================ -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css" />
+
+<!-- ============================================================
+     Stylesheet with performance optimization
+     ============================================================ -->
+<link rel="stylesheet" href="styles.css" media="all" />
 </head>
 <body>
 <nav class="top-nav hidden" id="topNav">
